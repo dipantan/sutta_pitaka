@@ -1,0 +1,30 @@
+export const Color = {
+  primaryColor: "#c68b05",
+  primaryColorLight: "#f9b20f",
+  primaryColorLightTransparent: "rgba(252, 239, 149, 0.2)",
+  primaryColorDark: "#9e6f04",
+  primaryAccentColor: "#5aa8f2",
+  primaryAccentColorLight: "#4886C1",
+  secondaryAccentColor: "#C03030",
+  secondaryAccentColorLight: "#CC5959",
+  primaryBackgroundColor: "#414141",
+  onPrimaryPrimaryTextColor: "#eeeeee",
+  onPrimarySecondaryTextColor: "#cccccc",
+  secondaryBackgroundColor: "#515151",
+  onSecondaryPrimaryTextColor: "#efefef",
+  onSecondarySecondaryTextColor: "#cdcdcd",
+  tertiaryBackgroundColor: "#616161",
+  onTertiaryPrimaryTextColor: "#ffffff",
+  onTertiarySecondaryTextColor: "#dddddd",
+  darkFixedBackgroundColor: "#515151",
+  darkerFixedBackgroundColor: "#414141",
+  invertedTextColor: "#ffffff",
+  oppositeBackgroundColor: "#ffffff",
+  oppositeTextColor: "#201b13",
+  iconColor: "#ababab",
+  borderColor: "#777",
+  toastErrorColor: "#ba1a1a",
+  toastSuccessColor: "#4886C1", // References primaryAccentColorLight
+  pieChartBgColor: "#4886C1", // References primaryAccentColorLight
+  pieChartFillColor: "#5aa8f2", // References primaryAccentColor
+} as const;

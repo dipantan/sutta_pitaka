@@ -1,27 +1,36 @@
 {
   "expo": {
-    "name": "sutta_pitaka",
-    "slug": "sutta_pitaka",
+    "name": "Sutta Pitaka",
+    "slug": "suttas",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "suttapitaka",
+    "scheme": "suttas",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "description": "A digital collection of the Sutta Pitaka, part of the Pali Canon of Theravada Buddhism.",
+    "githubUrl": "",
+    "platforms": ["ios", "android"],
+    "owner": "dipantan",
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "enabled": true
+    },
+    "splash": {
+      "backgroundColor": "#111b23",
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "imageWidth": 200
+    },
     "ios": {
       "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#111b23"
       },
       "edgeToEdgeEnabled": true
-    },
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
       "expo-router",
@@ -31,7 +40,7 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
+          "backgroundColor": "#111b23"
         }
       ]
     ],
