@@ -1,7 +1,8 @@
 import { Color } from "@/constants/color";
 import useLanguageStore from "@/stores/useLanguage";
+import { htmlToText } from "@/utils";
 import React, { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { Card, Text, useTheme } from "react-native-paper";
 
 const MenuCard = ({
@@ -12,11 +13,16 @@ const MenuCard = ({
   onPress,
   yellowBrickRoadCount,
   yellowBrickRoad,
+  child_range,
 }: TMenuCard) => {
   const { colors } = useTheme();
   const currentLanguage = useLanguageStore((state) => state.currentLanguage);
 
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const GenericPressableComponent = ({ onPress, children }: any) => (
+    <TouchableOpacity onPress={onPress}>{children}</TouchableOpacity>
+  );
 
   return (
     <Card
@@ -24,39 +30,75 @@ const MenuCard = ({
       onPress={onPress}
     >
       <Card.Content style={styles.content}>
-        <Text
-          variant="bodyLarge"
-          style={[
-            {
-              color: Color.onPrimaryPrimaryTextColor,
-              fontWeight: "700",
-              textTransform: "capitalize",
-            },
-          ]}
-        >
-          {headerTitle?.toUpperCase()}
-        </Text>
+        {headerTitle && (
+          <Text
+            variant="bodyLarge"
+            style={[
+              {
+                color: Color.onPrimaryPrimaryTextColor,
+                fontWeight: "700",
+                textTransform: "capitalize",
+                marginTop: 12,
+              },
+            ]}
+            numberOfLines={2}
+          >
+            {headerTitle?.toUpperCase()}
+          </Text>
+        )}
 
-        <Text
-          style={[{ color: Color.onPrimarySecondaryTextColor }]}
-          variant="labelSmall"
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            gap: 8,
+          }}
         >
-          {leftText?.toUpperCase()} {headerSubtitle?.toUpperCase()}
-        </Text>
+          {leftText && (
+            <Text
+              style={[
+                {
+                  color: Color.onPrimarySecondaryTextColor,
+                  backgroundColor: Color.darkFixedBackgroundColor,
+                  paddingHorizontal: 4,
+                  borderRadius: 4,
+                },
+              ]}
+              variant="labelSmall"
+            >
+              {leftText?.toUpperCase()}
+            </Text>
+          )}
 
-        {/* <ExpandableText
-          description={description ?? ""}
-          color={Color.onPrimaryPrimaryTextColor}
-        /> */}
+          {headerSubtitle && (
+            <Text
+              style={[{ color: Color.onPrimarySecondaryTextColor }]}
+              variant="labelSmall"
+            >
+              {headerSubtitle?.toUpperCase()}
+            </Text>
+          )}
 
-        <Text
-          style={[{ color: Color.onPrimaryPrimaryTextColor }]}
-          numberOfLines={isExpanded ? undefined : 2}
-          variant="bodyMedium"
-          onPress={() => setIsExpanded(!isExpanded)}
-        >
-          {description}
-        </Text>
+          {child_range && (
+            <Text
+              style={[{ color: Color.onPrimarySecondaryTextColor }]}
+              variant="labelSmall"
+            >
+              {child_range}
+            </Text>
+          )}
+        </View>
+
+        {description && (
+          <Text
+            style={[{ color: Color.onPrimaryPrimaryTextColor }]}
+            numberOfLines={isExpanded ? undefined : 2}
+            variant="bodyMedium"
+            onPress={() => setIsExpanded(!isExpanded)}
+          >
+            {htmlToText(description)}
+          </Text>
+        )}
 
         {yellowBrickRoad && (
           <View
@@ -91,7 +133,7 @@ const styles = StyleSheet.create({
   content: {
     paddingVertical: 12,
     paddingHorizontal: 16,
-    gap: 2,
+    gap: 8,
   },
   title: {
     fontSize: 16,

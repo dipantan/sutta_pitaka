@@ -9,12 +9,17 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "description": "A digital collection of the Sutta Pitaka, part of the Pali Canon of Theravada Buddhism.",
-    "githubUrl": "",
-    "platforms": ["ios", "android"],
+    "githubUrl": "https://github.com/dipantan/sutta_pitaka",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "owner": "dipantan",
     "updates": {
       "fallbackToCacheTimeout": 0,
-      "enabled": true
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD"
     },
     "splash": {
       "backgroundColor": "#111b23",
@@ -30,7 +35,8 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#111b23"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "package": "com.suttas"
     },
     "plugins": [
       "expo-router",
@@ -42,10 +48,21 @@
           "resizeMode": "contain",
           "backgroundColor": "#111b23"
         }
-      ]
+      ],
+      "expo-web-browser",
+      "expo-font"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "958add81-64a8-42aa-befc-1f371696dc63"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
     }
   }
 }

@@ -3,9 +3,9 @@ import MenuCard from "@/components/MenuCard";
 import { Color } from "@/constants/color";
 import useLanguageStore from "@/stores/useLanguage";
 import useMenuStore from "@/stores/useMenu";
-import { margin, padding, wp } from "@/utils/responsive";
-import AntDesign from "@expo/vector-icons/AntDesign";
-import Entypo from "@expo/vector-icons/Entypo";
+import { NikayaMapper } from "@/utils";
+import { margin, padding, spacing, wp } from "@/utils/responsive";
+import { AntDesign, Entypo } from "@expo/vector-icons";
 import { router, useNavigation } from "expo-router";
 import React, { useEffect, useLayoutEffect, useState } from "react";
 import { FlatList, Platform, TouchableOpacity, View } from "react-native";
@@ -90,7 +90,7 @@ export default function Index() {
           alignItems: "center",
           justifyContent: "space-between",
           paddingHorizontal: 16,
-          paddingVertical: 16,
+          paddingVertical: 12,
         }}
       >
         {menu?.root_name && (
@@ -98,11 +98,12 @@ export default function Index() {
             {menu?.root_name}
           </Text>
         )}
+
         <Menu
           visible={visible}
           onDismiss={closeMenu}
           anchor={
-            <TouchableOpacity onPress={openMenu}>
+            <TouchableOpacity onPress={openMenu} style={{}}>
               <Entypo
                 name="dots-three-vertical"
                 size={24}
@@ -172,7 +173,7 @@ export default function Index() {
         }}
       >
         <FlatList
-          data={menu?.children}
+          data={menu?.children?.slice(0, -1)} //remove the last item because it is not fall in the five nikaya
           showsVerticalScrollIndicator={false}
           keyExtractor={(item) => item.uid}
           ListHeaderComponent={
@@ -197,14 +198,15 @@ export default function Index() {
               uid={item.uid}
               yellowBrickRoad={item.yellow_brick_road}
               yellowBrickRoadCount={item.yellow_brick_road_count}
-              onPress={() =>
+              onPress={() => {
                 router.push({
                   pathname: "/vaggaList/[uid]",
                   params: {
-                    uid: item.uid,
+                    uid: NikayaMapper(item.uid),
+                    title: item.root_name,
                   },
-                })
-              }
+                });
+              }}
             />
           )}
           ListEmptyComponent={
@@ -232,6 +234,9 @@ export default function Index() {
       <Dialog
         visible={showLanguageChooserDialog}
         onDismiss={() => setShowLanguageChooserDialog(false)}
+        style={{
+          borderRadius: spacing.lg,
+        }}
       >
         <FlatList
           data={languages}
@@ -250,11 +255,6 @@ export default function Index() {
               Choose your language
             </Text>
           )}
-          contentContainerStyle={
-            {
-              // gap: 2,
-            }
-          }
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
             <TouchableOpacity
