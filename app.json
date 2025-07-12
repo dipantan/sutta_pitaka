@@ -28,7 +28,8 @@
       "imageWidth": 200
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.suttas"
     },
     "android": {
       "adaptiveIcon": {
