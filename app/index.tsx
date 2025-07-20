@@ -17,8 +17,8 @@ import {
 } from "react-native";
 import {
   ActivityIndicator,
+  Button,
   Dialog,
-  Divider,
   Menu,
   Text,
 } from "react-native-paper";
@@ -54,7 +54,10 @@ export default function Index() {
   const { top } = useSafeAreaInsets();
 
   useEffect(() => {
-    fetchLanguage();
+    // dont fetch language if its already fetched
+    if (!currentLanguage) {
+      fetchLanguage();
+    }
   }, []);
 
   useEffect(() => {
@@ -161,14 +164,14 @@ export default function Index() {
             }}
             title="About"
           />
-          <Divider />
+          {/* <Divider />
           <Menu.Item
             onPress={() => {}}
             titleStyle={{
               fontWeight: "600",
             }}
             title="About"
-          />
+          /> */}
         </Menu>
       </View>
 
@@ -244,6 +247,7 @@ export default function Index() {
         onDismiss={() => setShowLanguageChooserDialog(false)}
         style={{
           borderRadius: spacing.lg,
+          backgroundColor: Color.primaryBackgroundColor,
         }}
       >
         <FlatList
@@ -251,17 +255,24 @@ export default function Index() {
           style={{
             marginBottom: padding.large,
           }}
+          stickyHeaderIndices={[0]}
           ListHeaderComponent={() => (
-            <Text
+            <View
               style={{
-                fontWeight: "700",
-                textAlign: "center",
-                marginBottom: margin.medium,
+                backgroundColor: Color.primaryBackgroundColor,
               }}
-              variant="titleMedium"
             >
-              Choose your language
-            </Text>
+              <Text
+                style={{
+                  fontWeight: "700",
+                  textAlign: "center",
+                  marginBottom: margin.medium,
+                }}
+                variant="titleMedium"
+              >
+                Choose your language
+              </Text>
+            </View>
           )}
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => (
@@ -310,6 +321,21 @@ export default function Index() {
           )}
           keyExtractor={(item) => item.uid}
         />
+
+        <Button
+          onPress={() => {
+            setShowLanguageChooserDialog(false);
+          }}
+          style={{
+            position: "absolute",
+            bottom: 10,
+            right: 16,
+          }}
+          buttonColor={Color.primaryColor}
+          textColor={Color.invertedTextColor}
+        >
+          Close
+        </Button>
       </Dialog>
     </View>
   );
