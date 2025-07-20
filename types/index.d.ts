@@ -40,7 +40,7 @@ type Menu = {
 };
 
 type ChildMenu = {
-  uid: string;
+  uid: "long" | "middle" | "linked" | "numbered" | "minor";
   root_name: string;
   translated_name: string;
   acronym: string;

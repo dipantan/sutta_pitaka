@@ -1,8 +1,9 @@
-import { MenuById } from "@/api/endpoints";
+import { MenuById, SuttaById } from "@/api/endpoints";
 import instance from "@/api/instance";
 import MenuCard from "@/components/MenuCard";
 import { Color } from "@/constants/color";
 import useLanguageStore from "@/stores/useLanguage";
+import { Suttaplex, SuttaRoot } from "@/types/suttaplex";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useEffect } from "react";
 import {
@@ -26,6 +27,7 @@ type IData = {
   child_range: string;
   yellow_brick_road: boolean;
   yellow_brick_road_count: number;
+  extraData: SuttaRoot;
 };
 
 const VaggaList = () => {
@@ -35,23 +37,47 @@ const VaggaList = () => {
 
   const [data, setData] = React.useState<IData[]>([]);
 
-  const fetchVagga = async () => {
+  const fetchVaggaAndSuttaPlex = async () => {
     try {
       setLoading(true);
-      const { data } = await instance.get(
+
+      // Fetch list
+      const { data: vaggaResp } = await instance.get(
         MenuById(uid as string, currentLanguage?.iso_code as string)
       );
-      setData(data?.[0]?.children);
+      const items: IData[] = vaggaResp?.[0]?.children || [];
+
+      // Fetch all suttaplex in parallel
+      const details = await Promise.all(
+        items.map(async (item) => {
+          //  if item type is branch then skip
+          if (item.node_type === "branch") return item;
+
+          try {
+            const { data: suttaplexResp } = await instance.get<Suttaplex[]>(
+              SuttaById(item.uid, currentLanguage?.iso_code as string)
+            );
+
+            return { ...item, extraData: suttaplexResp };
+          } catch (e: any) {
+            // Optional: Attach error info, or fallback to item only
+            return { ...item, extraData: {} as SuttaRoot };
+          }
+        })
+      );
+
+      setData(details as IData[]);
     } catch (error) {
       console.log(error);
+      setData([]); // optional: or keep previous
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchVagga();
-  }, []);
+    fetchVaggaAndSuttaPlex();
+  }, [currentLanguage, uid]);
 
   return (
     <View
@@ -80,37 +106,42 @@ const VaggaList = () => {
         <FlatList
           data={data}
           keyExtractor={(item) => item.uid}
-          renderItem={({ item }) => (
-            <MenuCard
-              uid={item.uid}
-              headerTitle={item.translated_name}
-              headerSubtitle={item.root_name}
-              description={item.blurb}
-              yellowBrickRoadCount={item.yellow_brick_road_count}
-              yellowBrickRoad={item.yellow_brick_road}
-              leftText={item.root_lang_iso}
-              child_range={item.child_range}
-              onPress={() => {
-                if (item.node_type === "leaf") {
-                  router.push({
-                    pathname: "/suttaList/[id]",
-                    params: {
-                      id: item.uid,
-                      title: item.translated_name,
-                    },
-                  });
-                } else {
-                  router.push({
-                    pathname: "/vaggaList/[uid]",
-                    params: {
-                      uid: item.uid,
-                      title: item.root_name,
-                    },
-                  });
+          renderItem={({ item }) => {
+            return (
+              <MenuCard
+                uid={item.uid}
+                headerTitle={
+                  item.extraData?.suttaplex?.translated_title ||
+                  item.translated_name
                 }
-              }}
-            />
-          )}
+                headerSubtitle={item.root_name}
+                description={item.blurb}
+                yellowBrickRoadCount={item.yellow_brick_road_count}
+                yellowBrickRoad={item.yellow_brick_road}
+                leftText={item.root_lang_iso}
+                child_range={item.child_range}
+                onPress={() => {
+                  if (item.node_type === "leaf") {
+                    router.push({
+                      pathname: "/suttaList/[id]",
+                      params: {
+                        id: item.uid,
+                        title: item.translated_name,
+                      },
+                    });
+                  } else {
+                    router.push({
+                      pathname: "/vaggaList/[uid]",
+                      params: {
+                        uid: item.uid,
+                        title: item.root_name,
+                      },
+                    });
+                  }
+                }}
+              />
+            );
+          }}
           showsVerticalScrollIndicator={false}
         />
       )}

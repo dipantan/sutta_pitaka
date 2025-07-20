@@ -16,6 +16,8 @@ const AnguttaraNikaya = (_lang: string) => `/suttaplex/numbered`;
 const KhuddakaNikaya = (_lang: string) => `/suttaplex/minor`;
 const SuttaPlexById = (id: string, lang?: string) =>
   `/suttaplex/${id}?language=${lang}`;
+const SuttaById = (id: string, lang?: string) =>
+  `/suttas/${id}?lang=${lang}`;
 
 const BillaraSutta = (id: string, author: string) =>
   `/bilarasuttas/${id}/${author}`;
@@ -23,17 +25,16 @@ const BillaraSutta = (id: string, author: string) =>
 const Sutta = (id: string, author: string) => `/suttas/${id}/${author}`;
 
 export {
-  AnguttaraNikaya,
+  
   BillaraSutta,
-  DighaNikaya,
-  KhuddakaNikaya,
+  
+  
   Languages,
-  MajjhimaNikaya,
-  Menu,
+  
+  
   MenuById,
-  SamyuttaNikaya,
-  Sutta,
-  SuttaPlexById,
-  TransalationCount
+  
+   SuttaById, 
+  
 };
 
