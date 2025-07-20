@@ -10,11 +10,7 @@
     "newArchEnabled": true,
     "description": "A digital collection of the Sutta Pitaka, part of the Pali Canon of Theravada Buddhism.",
     "githubUrl": "https://github.com/dipantan/sutta_pitaka",
-    "platforms": [
-      "ios",
-      "android",
-      "web"
-    ],
+    "platforms": ["ios", "android", "web"],
     "owner": "dipantan",
     "updates": {
       "fallbackToCacheTimeout": 0,
@@ -62,8 +58,6 @@
         "projectId": "958add81-64a8-42aa-befc-1f371696dc63"
       }
     },
-    "runtimeVersion": {
-      "policy": "sdkVersion"
-    }
+    "runtimeVersion": "1.0.0"
   }
 }

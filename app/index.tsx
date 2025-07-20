@@ -8,7 +8,13 @@ import { margin, padding, spacing, wp } from "@/utils/responsive";
 import { AntDesign, Entypo } from "@expo/vector-icons";
 import { router, useNavigation } from "expo-router";
 import React, { useEffect, useLayoutEffect, useState } from "react";
-import { FlatList, Platform, TouchableOpacity, View } from "react-native";
+import {
+  FlatList,
+  LogBox,
+  Platform,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import {
   ActivityIndicator,
   Dialog,
@@ -17,6 +23,8 @@ import {
   Text,
 } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+LogBox.ignoreAllLogs();
 
 export default function Index() {
   const [visible, setVisible] = React.useState(false);

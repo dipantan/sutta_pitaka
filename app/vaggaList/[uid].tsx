@@ -42,8 +42,6 @@ const VaggaList = () => {
         MenuById(uid as string, currentLanguage?.iso_code as string)
       );
       setData(data?.[0]?.children);
-
-      // setData(data);
     } catch (error) {
       console.log(error);
     } finally {

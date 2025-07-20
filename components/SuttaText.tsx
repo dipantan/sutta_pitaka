@@ -1,8 +1,10 @@
 import { Color } from "@/constants/color";
 import React from "react";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { Text as RNPText } from "react-native-paper";
 
 const SuttaText = ({ suttaData }: { suttaData: object }) => {
+
   // Function to determine text style based on the key structure
   const getTextStyle = (key: string) => {
     const parts = key.split(":")[1].split(".");
@@ -41,7 +43,14 @@ const SuttaText = ({ suttaData }: { suttaData: object }) => {
     return level <= 3;
   };
 
-  if(suttaData === null) return <></>
+  if (!suttaData)
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+        <RNPText variant="bodyLarge">
+          This sutta is not available in this language.
+        </RNPText>
+      </View>
+    );
 
   return (
     <ScrollView style={styles.container}>
@@ -57,7 +66,7 @@ const SuttaText = ({ suttaData }: { suttaData: object }) => {
                 needsSpaceBefore(key) && styles.spaceBefore,
               ]}
             >
-              <Text style={getTextStyle(key)}>{value}</Text>
+              <RNPText style={getTextStyle(key)}>{value}</RNPText>
             </View>
           );
         })}

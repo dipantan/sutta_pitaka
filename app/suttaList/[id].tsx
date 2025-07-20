@@ -23,6 +23,8 @@ const SuttaDetails = () => {
       setLoading(true);
       const { data } = await instance.get(BillaraSutta(id as string, "sujato"));
       setText(data?.translation_text);
+      console.log(data);
+      
     } catch (error) {
       console.log(error);
     } finally {

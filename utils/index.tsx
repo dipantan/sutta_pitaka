@@ -55,7 +55,15 @@ function convertToParagraph(
   return paragraphs.join("\n\n");
 }
 
-// for example if pass parameter as long->dn it will return
+/**
+ * Maps a Nikaya collection name to its corresponding abbreviation.
+ * 
+ * @param {string} uid - The name of the Nikaya collection. 
+ * @returns {string} The abbreviated code for the specified Nikaya collection.
+ * @example
+ * NikayaMapper('long') // returns 'dn'
+ * NikayaMapper('middle') // returns 'mn'
+ */
 const NikayaMapper = (
   uid: "long" | "middle" | "linked" | "numbered" | "minor"
 ) => {
@@ -183,4 +191,56 @@ const htmlToText = (htmlString: any) => {
   });
 };
 
-export { convertToParagraph, htmlToText, NikayaMapper };
+/**
+ * Checks if an array or nested array contains an item with type "branch".
+ *
+ * @param {any[]} data - The input array to search for branch type
+ * @returns {boolean} True if a branch type is found, false otherwise
+ */
+const hasBranchType = (data: any) => {
+  // Base case: if data is not an array, return false
+  if (!Array.isArray(data)) {
+    return false;
+  }
+
+  // Check each item in the array
+  for (const item of data) {
+    // If the current item has type="branch", return true
+    if (item.type === "branch") {
+      return true;
+    }
+    // Recursively check children if they exist
+    if (item.children && Array.isArray(item.children)) {
+      if (hasBranchType(item.children)) {
+        return true;
+      }
+    }
+  }
+
+  // No branch type found
+  return false;
+};
+
+/**
+ * Removes the first item from an array, returning the modified array.
+ * If the input is not an array or is empty, returns the original input unchanged.
+ *
+ * @param {void[]} arr - The input array to remove the first item from
+ * @returns {void[]} The array with the first item removed
+ */
+const removeFirstItem = (arr: void[]) => {
+  if (!Array.isArray(arr) || arr.length === 0) {
+    return arr; // Return unchanged if not an array or empty
+  }
+  arr.shift(); // Removes the first item (index 0)
+  return arr;
+};
+
+export {
+  convertToParagraph,
+  hasBranchType,
+  htmlToText,
+  NikayaMapper,
+  removeFirstItem
+};
+
