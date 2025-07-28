@@ -4,8 +4,9 @@ import MenuCard from "@/components/MenuCard";
 import { Color } from "@/constants/color";
 import useLanguageStore from "@/stores/useLanguage";
 import { Suttaplex, SuttaRoot } from "@/types/suttaplex";
+import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useEffect } from "react";
+import React from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -15,7 +16,7 @@ import {
 } from "react-native";
 import { Appbar } from "react-native-paper";
 
-type IData = {
+export type IData = {
   uid: string;
   root_name: string;
   translated_name: string;
@@ -30,61 +31,49 @@ type IData = {
   extraData: SuttaRoot;
 };
 
+const fetchVaggaAndSuttaPlex = async (
+  uid: string,
+  language: string
+): Promise<IData[]> => {
+  // Fetch list
+  const { data: vaggaResp } = await instance.get(MenuById(uid, language));
+  const items: IData[] = vaggaResp?.[0]?.children || [];
+
+  // Fetch all suttaplex in parallel
+  const details = await Promise.all(
+    items.map(async (item) => {
+      // if (item.node_type === "branch") return item;
+
+      try {
+        const { data: suttaplexResp } = await instance.get<Suttaplex[]>(
+          SuttaById(item.uid, language)
+        );
+        return { ...item, extraData: suttaplexResp };
+      } catch (e: any) {
+        return { ...item, extraData: {} as SuttaRoot };
+      }
+    })
+  );
+
+  return details as IData[];
+};
+
 const VaggaList = () => {
   const { uid, title } = useLocalSearchParams();
   const currentLanguage = useLanguageStore((state) => state.currentLanguage);
-  const [loading, setLoading] = React.useState(false);
 
-  const [data, setData] = React.useState<IData[]>([]);
-
-  const fetchVaggaAndSuttaPlex = async () => {
-    try {
-      setLoading(true);
-
-      // Fetch list
-      const { data: vaggaResp } = await instance.get(
-        MenuById(uid as string, currentLanguage?.iso_code as string)
-      );
-      const items: IData[] = vaggaResp?.[0]?.children || [];
-
-      // Fetch all suttaplex in parallel
-      const details = await Promise.all(
-        items.map(async (item) => {
-          //  if item type is branch then skip
-          if (item.node_type === "branch") return item;
-
-          try {
-            const { data: suttaplexResp } = await instance.get<Suttaplex[]>(
-              SuttaById(item.uid, currentLanguage?.iso_code as string)
-            );
-
-            return { ...item, extraData: suttaplexResp };
-          } catch (e: any) {
-            // Optional: Attach error info, or fallback to item only
-            return { ...item, extraData: {} as SuttaRoot };
-          }
-        })
-      );
-
-      setData(details as IData[]);
-    } catch (error) {
-      console.log(error);
-      setData([]); // optional: or keep previous
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchVaggaAndSuttaPlex();
-  }, [currentLanguage, uid]);
+  const { data, isLoading } = useQuery({
+    queryKey: ["vaggaList", uid, currentLanguage?.iso_code],
+    queryFn: () =>
+      fetchVaggaAndSuttaPlex(
+        uid as string,
+        currentLanguage?.iso_code as string
+      ),
+    enabled: !!uid && !!currentLanguage?.iso_code,
+  });
 
   return (
-    <View
-      style={{
-        flex: 1,
-      }}
-    >
+    <View style={{ flex: 1 }}>
       <Appbar.Header
         statusBarHeight={Platform.OS === "ios" ? 5 : StatusBar.currentHeight}
       >
@@ -92,7 +81,7 @@ const VaggaList = () => {
         <Appbar.Content title={title || "Vaggas"} />
       </Appbar.Header>
 
-      {loading ? (
+      {isLoading ? (
         <View
           style={{
             flex: 1,
@@ -104,44 +93,46 @@ const VaggaList = () => {
         </View>
       ) : (
         <FlatList
-          data={data}
+          data={data || []}
           keyExtractor={(item) => item.uid}
-          renderItem={({ item }) => {
-            return (
-              <MenuCard
-                uid={item.uid}
-                headerTitle={
-                  item.extraData?.suttaplex?.translated_title ||
-                  item.translated_name
+          renderItem={({ item }) => (
+            <MenuCard
+              uid={item.uid}
+              headerTitle={
+                item.node_type === "branch"
+                  ? item.translated_name || item.root_name
+                  : item.extraData?.suttaplex?.translated_title
+              }
+              translations={item.extraData?.suttaplex?.translations}
+              headerSubtitle={item.root_name}
+              description={item.blurb}
+              yellowBrickRoadCount={item.yellow_brick_road_count}
+              yellowBrickRoad={item.yellow_brick_road}
+              leftText={item.root_lang_iso}
+              child_range={item.child_range}
+              onPress={() => {
+                if (item.node_type === "branch") {
+                  router.push({
+                    pathname: "/vaggaList/[uid]",
+                    params: {
+                      uid: item.uid,
+                      title: item.root_name,
+                    },
+                  });
                 }
-                headerSubtitle={item.root_name}
-                description={item.blurb}
-                yellowBrickRoadCount={item.yellow_brick_road_count}
-                yellowBrickRoad={item.yellow_brick_road}
-                leftText={item.root_lang_iso}
-                child_range={item.child_range}
-                onPress={() => {
-                  if (item.node_type === "leaf") {
-                    router.push({
-                      pathname: "/suttaList/[id]",
-                      params: {
-                        id: item.uid,
-                        title: item.translated_name,
-                      },
-                    });
-                  } else {
-                    router.push({
-                      pathname: "/vaggaList/[uid]",
-                      params: {
-                        uid: item.uid,
-                        title: item.root_name,
-                      },
-                    });
-                  }
-                }}
-              />
-            );
-          }}
+              }}
+              onAuthorPress={(translation) => {
+                router.navigate({
+                  pathname: "/suttaRead/[id]",
+                  params: {
+                    ...item,
+                    extraData: JSON.stringify(item.extraData),
+                    ...translation,
+                  },
+                });
+              }}
+            />
+          )}
           showsVerticalScrollIndicator={false}
         />
       )}

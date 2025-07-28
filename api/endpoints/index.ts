@@ -7,8 +7,19 @@ const MenuById = (id: string, language?: string) =>
 
 // suttaplex -> suttas -> sutta
 const SuttaById = (id: string, lang?: string) => `/suttas/${id}?lang=${lang}`;
+const SuttaByAuthor = (id: string, authorId: string, lang?: string) =>
+  `/suttas/${id}/${authorId}?lang=${lang}`;
 
 const BillaraSutta = (id: string, author: string) =>
   `/bilarasuttas/${id}/${author}`;
 
-export { BillaraSutta, Languages, MenuById, SuttaById };
+const BillaraSuttaByAuthor = (id: string, authorId: string, lang: string) =>
+  `/bilarasuttas/${id}/${authorId}?lang=${lang}`;
+
+export {
+  BillaraSutta, BillaraSuttaByAuthor, Languages,
+  MenuById,
+  SuttaByAuthor,
+  SuttaById
+};
+

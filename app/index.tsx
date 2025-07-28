@@ -1,342 +1,246 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import MenuCard from "@/components/MenuCard";
 import { Color } from "@/constants/color";
-import useLanguageStore from "@/stores/useLanguage";
-import useMenuStore from "@/stores/useMenu";
-import { NikayaMapper } from "@/utils";
-import { margin, padding, spacing, wp } from "@/utils/responsive";
-import { AntDesign, Entypo } from "@expo/vector-icons";
-import { router, useNavigation } from "expo-router";
-import React, { useEffect, useLayoutEffect, useState } from "react";
+import { hp, wp } from "@/utils/responsive";
 import {
-  FlatList,
-  LogBox,
-  Platform,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import {
-  ActivityIndicator,
-  Button,
-  Dialog,
-  Menu,
-  Text,
-} from "react-native-paper";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+  EvilIcons,
+  MaterialCommunityIcons,
+  Octicons,
+} from "@expo/vector-icons";
+import { Link } from "expo-router";
+import { MotiView } from "moti";
+import React from "react";
+import { StatusBar, StyleSheet, View } from "react-native";
+import { ScrollView } from "react-native-gesture-handler";
+import { Avatar, Button, Card, Text } from "react-native-paper";
 
-LogBox.ignoreAllLogs();
-
-export default function Index() {
-  const [visible, setVisible] = React.useState(false);
-
-  const navigation = useNavigation();
-
-  const [showLanguageChooserDialog, setShowLanguageChooserDialog] =
-    useState(false);
-
-  const openMenu = () => setVisible(true);
-
-  const closeMenu = () => setVisible(false);
-
-  const fetchLanguage = useLanguageStore((state) => state.fetchLanguage);
-  const currentLanguage = useLanguageStore((state) => state.currentLanguage);
-  const setCurrentLanguage = useLanguageStore(
-    (state) => state.setCurrentLanguage
-  );
-  const languages = useLanguageStore((state) => state.languages);
-  const languageLoading = useLanguageStore((state) => state.loading);
-
-  const fetchMenu = useMenuStore((state) => state.fetchMenu);
-  const menu = useMenuStore((state) => state.menu);
-  const menuError = useMenuStore((state) => state.error);
-  const menuloading = useMenuStore((state) => state.loading);
-
-  const { top } = useSafeAreaInsets();
-
-  useEffect(() => {
-    // dont fetch language if its already fetched
-    if (!currentLanguage) {
-      fetchLanguage();
-    }
-  }, []);
-
-  useEffect(() => {
-    if (currentLanguage) {
-      fetchMenu("sutta", currentLanguage?.iso_code); // only fetch the sutta menu
-    }
-  }, [currentLanguage]);
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerBackground: null,
-    });
-  }, [navigation]);
-
-  if (menuloading || languageLoading) {
-    return (
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-        }}
-      >
-        <ActivityIndicator size="large" color={Color.primaryColor} />
-      </View>
-    );
-  }
-
+const App = () => {
   return (
-    <View
+    <ScrollView
       style={{
         flex: 1,
-        paddingTop: Platform.OS === "android" ? top : 0,
       }}
+      showsVerticalScrollIndicator={false}
     >
-      {/* header */}
-      <View
+      <MotiView
+        animate={{
+          translateY: [
+            { value: -5, type: "timing", delay: 100 },
+            { value: 5, type: "timing", delay: 100 },
+          ],
+        }}
+        transition={{
+          loop: true,
+          type: "spring",
+          duration: 5000,
+        }}
         style={{
-          flexDirection: "row",
-          width: "100%",
           alignItems: "center",
-          justifyContent: "space-between",
-          paddingHorizontal: 16,
-          paddingVertical: 12,
+          marginTop: StatusBar.currentHeight + hp(2),
         }}
       >
-        {menu?.root_name && (
-          <Text variant="headlineSmall" style={{ fontWeight: "bold" }}>
-            {menu?.root_name}
-          </Text>
-        )}
+        <Octicons
+          name="book"
+          size={wp(16)}
+          color={Color.primaryAlternateColor}
+        />
+      </MotiView>
 
-        <Menu
-          visible={visible}
-          onDismiss={closeMenu}
-          anchor={
-            <TouchableOpacity onPress={openMenu} style={{}}>
-              <Entypo
-                name="dots-three-vertical"
-                size={24}
-                color={Color.oppositeBackgroundColor}
-              />
-            </TouchableOpacity>
-          }
+      <View
+        style={{
+          marginTop: wp(4),
+          alignItems: "center",
+        }}
+      >
+        <Text
+          variant="displaySmall"
           style={{
-            backgroundColor: Color.primaryBackgroundColor,
-          }}
-          anchorPosition="top"
-          mode="elevated"
-          contentStyle={{ width: 200, padding: 0 }}
-          elevation={5}
-          keyboardShouldPersistTaps="handled"
-          theme={{
-            roundness: 8,
+            fontWeight: "bold",
           }}
         >
-          <Menu.Item
-            onPress={() => {
-              closeMenu();
-              setShowLanguageChooserDialog(true);
+          Welcome to
+        </Text>
+
+        <Text
+          variant="displaySmall"
+          style={{
+            color: Color.primaryAlternateColor,
+            fontWeight: "bold",
+          }}
+        >
+          Sutta Pitaka
+        </Text>
+
+        <Text
+          variant="labelLarge"
+          style={{
+            marginTop: wp(4),
+            textAlign: "center",
+            color: Color.iconColor,
+          }}
+        >
+          Discover the profound teachings of the Buddha through an accessible,
+          modern interface. Explore ancient wisdom for contemporary life.
+        </Text>
+
+        <Link href={"/suttaMenu"} asChild>
+          <Button
+            buttonColor={Color.primaryColor}
+            textColor={Color.invertedTextColor}
+            style={{
+              marginVertical: wp(4),
+              width: wp(40),
+              borderRadius: wp(2),
             }}
-            title={`Language: ${
-              currentLanguage ? currentLanguage.name : "Select Language"
-            }`}
-            titleStyle={{
-              fontWeight: "600",
-            }}
-            containerStyle={{
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-            trailingIcon={() => (
-              <AntDesign
-                name="right"
-                size={16}
-                color={Color.oppositeBackgroundColor}
+          >
+            Explore Suttas
+          </Button>
+        </Link>
+
+        <Link href={"/about"} asChild>
+          <Button
+            icon={() => (
+              <EvilIcons
+                name="heart"
+                size={24}
+                color={Color.primaryBackgroundColor}
               />
             )}
-          />
-          <Menu.Item
-            onPress={() => {}}
-            titleStyle={{
-              fontWeight: "600",
+            style={{
+              width: wp(40),
+              borderRadius: wp(2),
             }}
-            title="About"
-          />
-          {/* <Divider />
-          <Menu.Item
-            onPress={() => {}}
-            titleStyle={{
-              fontWeight: "600",
-            }}
-            title="About"
-          /> */}
-        </Menu>
-      </View>
-
-      {/* content */}
-      <View
-        style={{
-          flex: 1,
-          paddingHorizontal: 10,
-          backgroundColor: Color.primaryBackgroundColor,
-        }}
-      >
-        <FlatList
-          data={menu?.children?.slice(0, -1)} //remove the last item because it is not fall in the five nikaya
-          showsVerticalScrollIndicator={false}
-          keyExtractor={(item) => item.uid}
-          ListHeaderComponent={
-            <View
+            buttonColor={Color.invertedTextColor}
+          >
+            <Text
               style={{
-                marginBottom: 20,
-                paddingHorizontal: 8,
-                gap: 4,
+                color: Color.primaryBackgroundColor,
               }}
             >
-              <Text variant="titleMedium" style={{}}>
-                {menu?.blurb}
-              </Text>
-            </View>
-          }
-          renderItem={({ item }) => (
-            <MenuCard
-              description={item.blurb}
-              headerTitle={item.translated_name || item.root_name}
-              isExpanded={false}
-              leftText={item.root_name}
-              uid={item.uid}
-              yellowBrickRoad={item.yellow_brick_road}
-              yellowBrickRoadCount={item.yellow_brick_road_count}
-              onPress={() => {
-                router.push({
-                  pathname: "/vaggaList/[uid]",
-                  params: {
-                    uid: NikayaMapper(item.uid),
-                    title: item.root_name,
-                  },
-                });
-              }}
-            />
-          )}
-          ListEmptyComponent={
-            <View
-              style={{
-                flex: 1,
-                justifyContent: "center",
-                alignItems: "center",
-              }}
-            >
-              <Text style={{ color: Color.onPrimaryPrimaryTextColor }}>
-                {menuError || "No menu available"}
-              </Text>
-            </View>
-          }
-          contentContainerStyle={
-            {
-              // paddingVertical: 10,
-            }
-          }
-        />
-      </View>
+              About & Credits
+            </Text>
+          </Button>
+        </Link>
 
-      {/* language chooser dialog */}
-      <Dialog
-        visible={showLanguageChooserDialog}
-        onDismiss={() => setShowLanguageChooserDialog(false)}
-        style={{
-          borderRadius: spacing.lg,
-          backgroundColor: Color.primaryBackgroundColor,
-        }}
-      >
-        <FlatList
-          data={languages}
+        <View
           style={{
-            marginBottom: padding.large,
+            marginVertical: wp(5),
+            gap: wp(4),
           }}
-          stickyHeaderIndices={[0]}
-          ListHeaderComponent={() => (
-            <View
-              style={{
-                backgroundColor: Color.primaryBackgroundColor,
-              }}
-            >
-              <Text
-                style={{
-                  fontWeight: "700",
-                  textAlign: "center",
-                  marginBottom: margin.medium,
-                }}
-                variant="titleMedium"
-              >
-                Choose your language
-              </Text>
-            </View>
-          )}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => {
-                setCurrentLanguage(item);
-                setShowLanguageChooserDialog(false);
-              }}
-            >
-              <Dialog.Content
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: wp(4),
-                }}
-              >
-                <View
-                  style={{
-                    backgroundColor: Color.borderColor,
-                    paddingVertical: padding.tiny,
-                    width: wp(10),
-                    justifyContent: "center",
-                    alignItems: "center",
-                    borderRadius: 8,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontWeight: "600",
-                    }}
-                  >
-                    {item.iso_code}
-                  </Text>
-                </View>
-
-                <Text
-                  style={{
-                    fontWeight: "600",
-                  }}
-                  variant="bodyMedium"
-                >
-                  {item.name}
-                </Text>
-              </Dialog.Content>
-            </TouchableOpacity>
-          )}
-          keyExtractor={(item) => item.uid}
-        />
-
-        <Button
-          onPress={() => {
-            setShowLanguageChooserDialog(false);
-          }}
-          style={{
-            position: "absolute",
-            bottom: 10,
-            right: 16,
-          }}
-          buttonColor={Color.primaryColor}
-          textColor={Color.invertedTextColor}
         >
-          Close
-        </Button>
-      </Dialog>
-    </View>
+          {/* sacred text */}
+          <Card
+            style={{
+              backgroundColor: Color.secondaryBackgroundColor,
+              width: wp(90),
+            }}
+            contentStyle={{
+              padding: 8,
+              alignItems: "center",
+              gap: wp(3),
+              paddingVertical: wp(3),
+            }}
+          >
+            <Avatar.Icon
+              size={wp(10)}
+              style={{
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+              icon={() => (
+                <Octicons
+                  name="book"
+                  size={wp(5)}
+                  color={Color.invertedTextColor}
+                />
+              )}
+            />
+            <Text variant="bodyLarge" style={{ fontWeight: "700" }}>
+              Sacred Texts
+            </Text>
+            <Text variant="bodyMedium" style={{ textAlign: "center" }}>
+              Access the complete collection of Buddha&apos;s teachings with
+              modern search and organization.
+            </Text>
+          </Card>
+
+          {/* mindful design */}
+          <Card
+            style={{
+              backgroundColor: Color.secondaryBackgroundColor,
+              width: wp(90),
+            }}
+            contentStyle={{
+              padding: 8,
+              alignItems: "center",
+              gap: wp(3),
+              paddingVertical: wp(3),
+            }}
+          >
+            <Avatar.Icon
+              size={wp(10)}
+              style={{
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: Color.secondaryAccentColor,
+              }}
+              icon={() => (
+                <Octicons
+                  name="heart"
+                  size={wp(5)}
+                  color={Color.invertedTextColor}
+                />
+              )}
+            />
+            <Text variant="bodyLarge" style={{ fontWeight: "700" }}>
+              Mindful Design
+            </Text>
+            <Text variant="bodyMedium" style={{ textAlign: "center" }}>
+              Crafted with intention to support peaceful reading and
+              contemplation.
+            </Text>
+          </Card>
+
+          {/* open source */}
+          <Card
+            style={{
+              backgroundColor: Color.secondaryBackgroundColor,
+              width: wp(90),
+            }}
+            contentStyle={{
+              padding: 8,
+              alignItems: "center",
+              gap: wp(3),
+              paddingVertical: wp(3),
+            }}
+          >
+            <Avatar.Icon
+              size={wp(10)}
+              style={{
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: Color.primaryAccentColor,
+              }}
+              icon={() => (
+                <MaterialCommunityIcons
+                  name="open-source-initiative"
+                  size={wp(7)}
+                  color={Color.invertedTextColor}
+                />
+              )}
+            />
+            <Text variant="bodyLarge" style={{ fontWeight: "700" }}>
+              Open Source
+            </Text>
+            <Text variant="bodyMedium" style={{ textAlign: "center" }}>
+              Built with gratitude upon the generous API provided by
+              SuttaCentral.net.
+            </Text>
+          </Card>
+        </View>
+      </View>
+    </ScrollView>
   );
-}
+};
+
+export default App;
+
+const styles = StyleSheet.create({});

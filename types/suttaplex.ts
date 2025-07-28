@@ -30,7 +30,7 @@ export interface Suttaplex {
   next: Next;
 }
 
-interface Translation {
+export interface Translation {
   lang: string;
   lang_name: string;
   is_root: boolean;

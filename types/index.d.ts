@@ -55,6 +55,7 @@ type ChildMenu = {
 
 type TMenuCard = {
   uid: string;
+  mainHeader?: string;
   headerTitle?: string;
   headerSubtitle?: string;
   description?: string;
@@ -65,8 +66,10 @@ type TMenuCard = {
   rightText?: string;
   isExpanded?: boolean;
   child_range?: string;
+  translations?: Translation[];
   setIsExpanded?: (isExpanded: boolean) => void;
   onPress?: () => void;
+  onAuthorPress?: (translation: Translation) => void;
 };
 
 type ISutta = {
