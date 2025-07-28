@@ -1,10 +1,6 @@
 import { Color } from "@/constants/color";
 import { hp, wp } from "@/utils/responsive";
-import {
-  EvilIcons,
-  MaterialCommunityIcons,
-  Octicons,
-} from "@expo/vector-icons";
+import { MaterialCommunityIcons, Octicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 import { MotiView } from "moti";
 import React from "react";
@@ -97,18 +93,18 @@ const App = () => {
 
         <Link href={"/about"} asChild>
           <Button
-            icon={() => (
-              <EvilIcons
-                name="heart"
-                size={24}
-                color={Color.primaryBackgroundColor}
-              />
-            )}
+            icon={"heart-outline"}
             style={{
               width: wp(40),
               borderRadius: wp(2),
+              alignItems: "center",
             }}
             buttonColor={Color.invertedTextColor}
+            theme={{
+              colors: {
+                // primary: Color.,
+              },
+            }}
           >
             <Text
               style={{

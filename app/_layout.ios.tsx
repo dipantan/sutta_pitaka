@@ -31,7 +31,7 @@ export default function RootLayout() {
               <Stack.Screen
                 name="comment"
                 options={{
-                  presentation: "modal",
+                  presentation: "transparentModal",
                 }}
               />
             </Stack>

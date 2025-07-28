@@ -1,3 +1,4 @@
+import { Color } from "@/constants/color";
 import { wp } from "@/utils/responsive";
 import React from "react";
 import { ImageBackground, StyleSheet, View } from "react-native";
@@ -31,9 +32,9 @@ const Mission = () => {
           style={[
             styles.author,
             {
-              alignSelf: "flex-start",
+              alignSelf: "flex-end",
               marginHorizontal: wp(4),
-              textAlign: "left",
+              color: Color.onTertiarySecondaryTextColor
             },
           ]}
         >
@@ -58,6 +59,7 @@ const Mission = () => {
               styles.missionText,
               {
                 textAlign: "left",
+                lineHeight: wp(6)
               },
             ]}
           >
@@ -104,6 +106,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#000",
     fontStyle: "italic",
+    lineHeight: wp(6)
   },
   author: {
     fontSize: 14,

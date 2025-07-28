@@ -55,7 +55,7 @@ const About = () => {
             }}
             style={{
               alignItems: "center",
-              marginTop: StatusBar.currentHeight + hp(2),
+              marginTop: hp(4),
             }}
           >
             <Image
@@ -75,8 +75,10 @@ const About = () => {
               height: wp(14),
               width: wp(14),
               right: -14,
+              top: hp(1),
               borderRadius: wp(7),
               opacity: 0.5,
+              zIndex: +999,
             }}
           />
         </View>
@@ -87,6 +89,7 @@ const About = () => {
         >
           About Sutta Pitaka
         </Text>
+
         <Text variant="titleMedium" style={{ textAlign: "center" }}>
           A peaceful journey through the teachings of the Buddha, bringing
           ancient wisdom to the modern world.
