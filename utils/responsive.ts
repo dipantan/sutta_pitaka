@@ -17,15 +17,15 @@ export const hp = (percentage: number) => (SCREEN_HEIGHT * percentage) / 100;
 const scale = (size: number) => (SCREEN_WIDTH / guidelineBaseWidth) * size;
 
 // Vertical scale based on screen height
-export const verticalScale = (size: number) =>
+const verticalScale = (size: number) =>
   (SCREEN_HEIGHT / guidelineBaseHeight) * size;
 
 // Moderate scale gives a slightly less aggressive scaling
-export const moderateScale = (size: number, factor = 0.5) =>
+const moderateScale = (size: number, factor = 0.5) =>
   size + (scale(size) - size) * factor;
 
 // Font sizes using RFValue
-export const fontSize = (size: number) => RFValue(size, SCREEN_HEIGHT);
+const fontSize = (size: number) => RFValue(size, SCREEN_HEIGHT);
 
 // Spacing helpers
 export const spacing = {
@@ -55,7 +55,7 @@ export const padding = {
 };
 
 // Font weight (optional utility)
-export const fontWeight = {
+const fontWeight = {
   light: "300",
   regular: "400",
   medium: "500",
@@ -65,5 +65,5 @@ export const fontWeight = {
 };
 
 // Platform-specific styles if needed
-export const isIOS = Platform.OS === "ios";
-export const isAndroid = Platform.OS === "android";
+const isIOS = Platform.OS === "ios";
+const isAndroid = Platform.OS === "android";
