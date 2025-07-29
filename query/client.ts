@@ -1,3 +1,4 @@
+import { clientStorage } from "@/utils/storage";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import { QueryClient } from "@tanstack/react-query";
 

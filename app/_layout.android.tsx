@@ -2,17 +2,18 @@ import { Color } from "@/constants/color";
 import { Theme } from "@/constants/theme";
 import { mmkvPersister, queryClient } from "@/query/client";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { SplashScreen, Stack } from "expo-router";
+import { Stack } from "expo-router";
+import { preventAutoHideAsync } from "expo-splash-screen";
 import { useEffect } from "react";
 import { StatusBar, StyleSheet, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PaperProvider } from "react-native-paper";
 
-SplashScreen.preventAutoHideAsync();
+preventAutoHideAsync();
 
 export default function RootLayout() {
   useEffect(() => {
-    SplashScreen.hideAsync();
+    // hideAsync();
   }, []);
 
   return (
