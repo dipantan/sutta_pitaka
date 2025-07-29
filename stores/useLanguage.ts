@@ -1,6 +1,6 @@
 import { Languages } from "@/api/endpoints";
 import { GETCALL } from "@/helpers/apiService";
-import zustandStorage from "@/utils/storage";
+import { zustandStorage } from "@/utils/storage";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 
