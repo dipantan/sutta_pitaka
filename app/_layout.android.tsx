@@ -3,17 +3,15 @@ import { Theme } from "@/constants/theme";
 import { mmkvPersister, queryClient } from "@/query/client";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Stack } from "expo-router";
-import { preventAutoHideAsync } from "expo-splash-screen";
 import { useEffect } from "react";
 import { StatusBar, StyleSheet, View } from "react-native";
+import BootSplash from "react-native-bootsplash";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PaperProvider } from "react-native-paper";
 
-preventAutoHideAsync();
-
 export default function RootLayout() {
   useEffect(() => {
-    // hideAsync();
+    BootSplash.hide({ fade: true });
   }, []);
 
   return (
