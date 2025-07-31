@@ -22,10 +22,6 @@
       "bundleIdentifier": "com.suttas"
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#111b23"
-      },
       "edgeToEdgeEnabled": true,
       "package": "com.suttas"
     },

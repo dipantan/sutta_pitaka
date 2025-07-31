@@ -11,7 +11,7 @@ import { PaperProvider } from "react-native-paper";
 
 export default function RootLayout() {
   useEffect(() => {
-    BootSplash.hide({ fade: true });
+    BootSplash.hide({ fade: false });
   }, []);
 
   return (
