@@ -12,6 +12,7 @@ import {
   FlatList,
   LogBox,
   Platform,
+  Pressable,
   StatusBar,
   TouchableOpacity,
   View,
@@ -101,6 +102,15 @@ export default function Index() {
       >
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title={menu?.root_name} />
+
+        <Pressable
+          style={{
+            paddingRight: 8,
+          }}
+          onPress={() => router.push("/search")}
+        >
+          <List.Icon icon={"magnify"} color="#fff" />
+        </Pressable>
 
         <Menu
           visible={visible}

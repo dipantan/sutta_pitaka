@@ -11,10 +11,11 @@ import {
   ActivityIndicator,
   FlatList,
   Platform,
+  Pressable,
   StatusBar,
   View,
 } from "react-native";
-import { Appbar } from "react-native-paper";
+import { Appbar, List } from "react-native-paper";
 
 export type IData = {
   uid: string;
@@ -79,6 +80,14 @@ const VaggaList = () => {
       >
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title={title || "Vaggas"} />
+        <Pressable
+          style={{
+            paddingRight: 8,
+          }}
+          onPress={() => router.push("/search")}
+        >
+          <List.Icon icon={"magnify"} color="#fff" />
+        </Pressable>
       </Appbar.Header>
 
       {isLoading ? (

@@ -19,6 +19,7 @@ const MenuCard = ({
   yellowBrickRoad,
   child_range,
   translations,
+  rightText,
   onAuthorPress,
 }: TMenuCard) => {
   const { colors } = useTheme();
@@ -51,43 +52,53 @@ const MenuCard = ({
         <View
           style={{
             flexDirection: "row",
+            justifyContent: "space-between",
             alignItems: "center",
-            gap: 8,
           }}
         >
-          {leftText && (
-            <Text
-              style={[
-                {
-                  color: Color.onPrimarySecondaryTextColor,
-                  backgroundColor: Color.darkFixedBackgroundColor,
-                  paddingHorizontal: 4,
-                  borderRadius: 4,
-                },
-              ]}
-              variant="labelSmall"
-            >
-              {leftText?.toUpperCase()}
-            </Text>
-          )}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            {leftText && (
+              <Text
+                style={[
+                  {
+                    color: Color.onPrimarySecondaryTextColor,
+                    backgroundColor: Color.darkFixedBackgroundColor,
+                    paddingHorizontal: 4,
+                    borderRadius: 4,
+                  },
+                ]}
+                variant="labelSmall"
+              >
+                {leftText?.toUpperCase()}
+              </Text>
+            )}
 
-          {headerSubtitle && (
-            <Text
-              style={[{ color: Color.onPrimarySecondaryTextColor }]}
-              variant="labelSmall"
-            >
-              {headerSubtitle?.toUpperCase()}
-            </Text>
-          )}
+            {headerSubtitle && (
+              <Text
+                style={[{ color: Color.onPrimarySecondaryTextColor }]}
+                variant="labelSmall"
+              >
+                {headerSubtitle?.toUpperCase()}
+              </Text>
+            )}
 
-          {child_range && (
-            <Text
-              style={[{ color: Color.onPrimarySecondaryTextColor }]}
-              variant="labelSmall"
-            >
-              {child_range}
-            </Text>
-          )}
+            {child_range && (
+              <Text
+                style={[{ color: Color.onPrimarySecondaryTextColor }]}
+                variant="labelSmall"
+              >
+                {child_range}
+              </Text>
+            )}
+          </View>
+
+          {rightText && <Text style={styles.rightText}>{rightText}</Text>}
         </View>
 
         {description && (

@@ -189,13 +189,7 @@ const SuttaDetails = () => {
         statusBarHeight={Platform.OS === "ios" ? 5 : StatusBar.currentHeight}
       >
         <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content
-          title={
-            title
-              ? `${title} - ${author || author_short || "Unknown"}`
-              : `${author || author_short || "Unknown"}`
-          }
-        />
+        <Appbar.Content title={`${author || author_short || "Unknown"}`} />
       </Appbar.Header>
       <WebView
         source={{ html: htmlContent }}

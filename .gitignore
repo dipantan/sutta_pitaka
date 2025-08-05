@@ -11,6 +11,7 @@ node_modules/
 
 # React Native Build files
 /android/app/build/
+/android/app/release/*
 **/build/
 **/android/app/src/main/assets/index.android.bundle
 **/android/app/src/main/assets/sourcemap.android.bundle.map
