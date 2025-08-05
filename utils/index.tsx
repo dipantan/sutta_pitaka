@@ -57,8 +57,8 @@ function convertToParagraph(
 
 /**
  * Maps a Nikaya collection name to its corresponding abbreviation.
- * 
- * @param {string} uid - The name of the Nikaya collection. 
+ *
+ * @param {string} uid - The name of the Nikaya collection.
  * @returns {string} The abbreviated code for the specified Nikaya collection.
  * @example
  * NikayaMapper('long') // returns 'dn'
@@ -192,33 +192,25 @@ const htmlToText = (htmlString: any) => {
 };
 
 /**
- * Checks if an array or nested array contains an item with type "branch".
- *
- * @param {any[]} data - The input array to search for branch type
- * @returns {boolean} True if a branch type is found, false otherwise
+ * Filters an array of items based on their type, prioritizing "branch" type if present.
+ * 
+ * @param {any[]} data - The input array to filter
+ * @returns {any[]} An array containing only items of the most significant type
+ * - If any "branch" type items exist, returns only "branch" items
+ * - If no "branch" items exist, returns only "leaf" items
+ * - Returns an empty array if input is not an array
  */
-const hasBranchType = (data: any) => {
-  // Base case: if data is not an array, return false
+const filterBranchOrLeaf = (data: any[]) => {
+  // Base case: if data is not an array, return empty array
   if (!Array.isArray(data)) {
-    return false;
+    return [];
   }
 
-  // Check each item in the array
-  for (const item of data) {
-    // If the current item has type="branch", return true
-    if (item.type === "branch") {
-      return true;
-    }
-    // Recursively check children if they exist
-    if (item.children && Array.isArray(item.children)) {
-      if (hasBranchType(item.children)) {
-        return true;
-      }
-    }
-  }
+  // Check if any item has type="branch"
+  const hasBranch = data.some((item) => item.type === "branch");
 
-  // No branch type found
-  return false;
+  // Filter items based on type: branch if any exist, otherwise leaf
+  return data.filter((item) => item.type === (hasBranch ? "branch" : "leaf"));
 };
 
 /**
@@ -228,7 +220,7 @@ const hasBranchType = (data: any) => {
  * @param {void[]} arr - The input array to remove the first item from
  * @returns {void[]} The array with the first item removed
  */
-const removeFirstItem = (arr: void[]) => {
+const removeFirstItem = (arr: any[]) => {
   if (!Array.isArray(arr) || arr.length === 0) {
     return arr; // Return unchanged if not an array or empty
   }
@@ -237,10 +229,10 @@ const removeFirstItem = (arr: void[]) => {
 };
 
 export {
-  convertToParagraph,
-  hasBranchType,
+  
+  
   htmlToText,
   NikayaMapper,
-  removeFirstItem
+  
 };
 

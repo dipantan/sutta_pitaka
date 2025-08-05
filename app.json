@@ -17,37 +17,28 @@
       "enabled": true,
       "checkAutomatically": "ON_LOAD"
     },
-    "splash": {
-      "backgroundColor": "#111b23",
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "imageWidth": 200
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.suttas"
     },
     "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#111b23"
-      },
       "edgeToEdgeEnabled": true,
       "package": "com.suttas"
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#111b23"
-        }
-      ],
       "expo-web-browser",
-      "expo-font"
+      "expo-font",
+      [
+        "react-native-bootsplash",
+        {
+          "assetsDir": "assets/bootsplash",
+          "android": {
+            "parentTheme": "TransparentStatus",
+            "darkContentBarsStyle": true
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
