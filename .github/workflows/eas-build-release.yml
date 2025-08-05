@@ -13,17 +13,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "18.x"
-          cache: "npm"
-
-      - name: Setup Java
-        uses: actions/setup-java@v3
-        with:
-          java-version: "17"
-          distribution: "temurin"
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+          node-version: '18.x'
+          cache: 'npm'
 
       - name: Setup Expo and EAS
         uses: expo/expo-github-action@v8
@@ -35,27 +26,49 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build APK
-        run: eas build --platform android --profile production --non-interactive --no-wait
+      - name: Start EAS Build
+        id: eas-build
+        run: |
+          BUILD_OUTPUT=$(eas build --platform android --profile production --non-interactive --json)
+          BUILD_ID=$(echo "$BUILD_OUTPUT" | jq -r '.id')
+          echo "build-id=$BUILD_ID" >> $GITHUB_OUTPUT
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
-      - name: Wait for build to complete
-        uses: expo/expo-github-action/await-build@v8
-        id: await-build
-        with:
-          build-id: ${{ steps.build.outputs.build-id }}
-          timeout: 1800 # 30 minutes timeout
-          platform: android
+      - name: Wait for EAS Build to Complete
+        run: |
+          STATUS="pending"
+          while [ "$STATUS" = "pending" ] || [ "$STATUS" = "in-progress" ]; do
+            sleep 30
+            STATUS=$(eas build:status --platform android --build-id ${{ steps.eas-build.outputs.build-id }} --json | jq -r '.status')
+            echo "Build status: $STATUS"
+            if [ "$STATUS" = "finished" ]; then
+              echo "Build completed successfully"
+              break
+            elif [ "$STATUS" = "errored" ]; then
+              echo "Build failed"
+              exit 1
+            fi
+          done
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Fetch Build Artifact URL
+        id: fetch-artifact
+        run: |
+          ARTIFACT_URL=$(eas build:list --platform android --build-profile production --limit 1 --json | jq -r '.[0].artifacts.buildUrl')
+          echo "artifact-url=$ARTIFACT_URL" >> $GITHUB_OUTPUT
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Download APK
         run: |
-          curl -L -o app-release.apk "${{ steps.await-build.outputs.artifact-url }}"
+          curl -L -o app-release.apk "${{ steps.fetch-artifact.outputs.artifact-url }}"
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: app-release.apk
           tag_name: v${{ github.run_number }}
