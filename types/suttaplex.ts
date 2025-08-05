@@ -1,14 +1,25 @@
-export interface Vaggga {
+export interface SuttaRoot {
+  root_text: any;
+  translation: any;
+  segmented: boolean;
+  suttaplex: Suttaplex;
+  bilara_root_text: BilaraRootText;
+  bilara_translated_text: any;
+  candidate_authors: string[];
+}
+
+export interface Suttaplex {
   acronym: string;
   volpages: string;
   alt_volpages: any;
   uid: string;
   blurb: string;
-  difficulty: Difficulty;
+  difficulty: number;
   original_title: string;
   root_lang: string;
   root_lang_name: string;
   type: string;
+  from: any;
   translated_title: string;
   translations: Translation[];
   parallel_count: number;
@@ -17,11 +28,6 @@ export interface Vaggga {
   verseNo: string;
   previous: Previous;
   next: Next;
-}
-
-export interface Difficulty {
-  name: string;
-  level: number;
 }
 
 export interface Translation {
@@ -39,12 +45,37 @@ export interface Translation {
   has_comment: boolean;
 }
 
-export interface Previous {
+interface Previous {
   name: any;
   uid: any;
 }
 
-export interface Next {
+interface Next {
+  name: any;
+  uid: any;
+}
+
+interface BilaraRootText {
+  uid: string;
+  author: string;
+  author_short: string;
+  author_uid: string;
+  lang: string;
+  title: string;
+  previous: Previous2;
+  next: Next2;
+}
+
+interface Previous2 {
+  author_uid: string;
+  lang: string;
+  name: any;
+  uid: any;
+}
+
+interface Next2 {
+  author_uid: string;
+  lang: string;
   name: any;
   uid: any;
 }
