@@ -3,6 +3,7 @@ export const Color = {
   primaryColorLight: "#f9b20f",
   primaryColorLightTransparent: "rgba(252, 239, 149, 0.2)",
   primaryColorDark: "#9e6f04",
+  primaryAlternateColor: "#e68019",
   primaryAccentColor: "#5aa8f2",
   primaryAccentColorLight: "#4886C1",
   secondaryAccentColor: "#C03030",

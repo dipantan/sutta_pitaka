@@ -1,0 +1,31 @@
+# Exclude large media files
+
+assets/_.mp4
+assets/_.mov
+assets/large-image\*.png
+assets/videos/
+
+# Exclude node modules (rebuilt during EAS build)
+
+node_modules/
+
+# Exclude build artifacts
+
+ios/build/
+ios/Pods/
+ios/_.ipa
+ios/_.xcarchive
+android/app/build/
+android/_.apk
+android/_.aab
+
+# Exclude temporary files
+
+_.log
+_.cache
+dist/
+
+# Exclude Firebase configs if duplicated or unnecessary
+
+google-services-backup.json
+GoogleService-Info-backup.plist

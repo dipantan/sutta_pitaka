@@ -1,11 +1,15 @@
 import { Color } from "@/constants/color";
 import useLanguageStore from "@/stores/useLanguage";
+import { Translation } from "@/types/suttaplex";
 import { htmlToText } from "@/utils";
+import { wp } from "@/utils/responsive";
+import { Entypo, MaterialIcons } from "@expo/vector-icons";
 import React, { useState } from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
-import { Card, Text, useTheme } from "react-native-paper";
+import { FlatList, Pressable, StyleSheet, View } from "react-native";
+import { Card, List, Text, useTheme } from "react-native-paper";
 
 const MenuCard = ({
+  mainHeader,
   description,
   headerSubtitle,
   headerTitle,
@@ -14,15 +18,13 @@ const MenuCard = ({
   yellowBrickRoadCount,
   yellowBrickRoad,
   child_range,
+  translations,
+  rightText,
+  onAuthorPress,
 }: TMenuCard) => {
   const { colors } = useTheme();
   const currentLanguage = useLanguageStore((state) => state.currentLanguage);
-
   const [isExpanded, setIsExpanded] = useState(false);
-
-  const GenericPressableComponent = ({ onPress, children }: any) => (
-    <TouchableOpacity onPress={onPress}>{children}</TouchableOpacity>
-  );
 
   return (
     <Card
@@ -50,54 +52,228 @@ const MenuCard = ({
         <View
           style={{
             flexDirection: "row",
+            justifyContent: "space-between",
             alignItems: "center",
-            gap: 8,
           }}
         >
-          {leftText && (
-            <Text
-              style={[
-                {
-                  color: Color.onPrimarySecondaryTextColor,
-                  backgroundColor: Color.darkFixedBackgroundColor,
-                  paddingHorizontal: 4,
-                  borderRadius: 4,
-                },
-              ]}
-              variant="labelSmall"
-            >
-              {leftText?.toUpperCase()}
-            </Text>
-          )}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            {leftText && (
+              <Text
+                style={[
+                  {
+                    color: Color.onPrimarySecondaryTextColor,
+                    backgroundColor: Color.darkFixedBackgroundColor,
+                    paddingHorizontal: 4,
+                    borderRadius: 4,
+                  },
+                ]}
+                variant="labelSmall"
+              >
+                {leftText?.toUpperCase()}
+              </Text>
+            )}
 
-          {headerSubtitle && (
-            <Text
-              style={[{ color: Color.onPrimarySecondaryTextColor }]}
-              variant="labelSmall"
-            >
-              {headerSubtitle?.toUpperCase()}
-            </Text>
-          )}
+            {headerSubtitle && (
+              <Text
+                style={[{ color: Color.onPrimarySecondaryTextColor }]}
+                variant="labelSmall"
+              >
+                {headerSubtitle?.toUpperCase()}
+              </Text>
+            )}
 
-          {child_range && (
-            <Text
-              style={[{ color: Color.onPrimarySecondaryTextColor }]}
-              variant="labelSmall"
-            >
-              {child_range}
-            </Text>
-          )}
+            {child_range && (
+              <Text
+                style={[{ color: Color.onPrimarySecondaryTextColor }]}
+                variant="labelSmall"
+              >
+                {child_range}
+              </Text>
+            )}
+          </View>
+
+          {rightText && <Text style={styles.rightText}>{rightText}</Text>}
         </View>
 
         {description && (
           <Text
-            style={[{ color: Color.onPrimaryPrimaryTextColor }]}
+            style={[
+              {
+                color: Color.onPrimaryPrimaryTextColor,
+                fontSize: wp(3.5),
+              },
+            ]}
             numberOfLines={isExpanded ? undefined : 2}
-            variant="bodyMedium"
             onPress={() => setIsExpanded(!isExpanded)}
           >
             {htmlToText(description)}
           </Text>
+        )}
+
+        {translations && translations?.length > 0 && (
+          <View>
+            <List.Accordion
+              title={`Translations in your chosen language (${
+                translations.filter(
+                  (item) => item.lang === currentLanguage?.iso_code
+                ).length
+              })`}
+              titleStyle={{ color: colors.onError, fontSize: 14 }}
+              expanded
+            >
+              <FlatList
+                data={translations.filter(
+                  (item) => item.lang === currentLanguage?.iso_code
+                )}
+                style={{
+                  gap: 16,
+                  // flexWrap: "wrap",
+                }}
+                renderItem={({ item }: { item: Translation }) => (
+                  <Pressable onPress={() => onAuthorPress?.(item)}>
+                    <List.Section
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 8,
+                        // flexWrap: "nowrap",
+                        // flex: 1,
+                      }}
+                    >
+                      <List.Icon
+                        icon={({ color, size }) => (
+                          <Entypo name="open-book" size={size} color={color} />
+                        )}
+                        color={colors.primary}
+                      />
+
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          gap: 8,
+                        }}
+                      >
+                        <Text variant="titleMedium">{item.author}</Text>
+                        <Text variant="titleSmall">{item.lang_name}</Text>
+
+                        {item.segmented && (
+                          <View style={styles.helperIndicatorContainer}>
+                            <Text variant="labelSmall">aligned</Text>
+                            <MaterialIcons
+                              name="done"
+                              size={wp(3)}
+                              color={Color.primaryAccentColor}
+                            />
+                          </View>
+                        )}
+
+                        {item.has_comment && (
+                          <View style={styles.helperIndicatorContainer}>
+                            <Text variant="labelSmall">annotated</Text>
+                            <MaterialIcons
+                              name="done"
+                              size={wp(3)}
+                              color={Color.primaryAccentColor}
+                            />
+                          </View>
+                        )}
+
+                        {!item.has_comment && !item.segmented && (
+                          <View style={styles.helperIndicatorContainer}>
+                            <Text variant="labelSmall">legacy</Text>
+                          </View>
+                        )}
+                      </View>
+                    </List.Section>
+                  </Pressable>
+                )}
+              />
+            </List.Accordion>
+
+            <List.Accordion
+              title={`Translations in other languages (${
+                translations.filter(
+                  (item) => item.lang !== currentLanguage?.iso_code
+                ).length
+              })`}
+              titleStyle={{ color: colors.onError, fontSize: 14 }}
+            >
+              <FlatList
+                data={translations.filter(
+                  (item) => item.lang !== currentLanguage?.iso_code
+                )}
+                style={{
+                  gap: 16,
+                }}
+                renderItem={({ item }: { item: Translation }) => (
+                  <Pressable onPress={() => onAuthorPress?.(item)}>
+                    <List.Section
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        columnGap: 8,
+                      }}
+                    >
+                      <List.Icon
+                        icon={({ color, size }) => (
+                          <Entypo name="open-book" size={size} color={color} />
+                        )}
+                        color={colors.primary}
+                      />
+
+                      <View
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          flexWrap: "wrap",
+                          gap: 8,
+                        }}
+                      >
+                        <Text variant="titleMedium">{item.author}</Text>
+                        <Text variant="labelMedium">{item.lang_name}</Text>
+
+                        {item.segmented && (
+                          <View style={styles.helperIndicatorContainer}>
+                            <Text variant="labelSmall">aligned</Text>
+                            <MaterialIcons
+                              name="done"
+                              size={wp(3)}
+                              color={Color.primaryAccentColor}
+                            />
+                          </View>
+                        )}
+
+                        {item.has_comment && (
+                          <View style={styles.helperIndicatorContainer}>
+                            <Text variant="labelSmall">annotated</Text>
+                            <MaterialIcons
+                              name="done"
+                              size={wp(3)}
+                              color={Color.primaryAccentColor}
+                            />
+                          </View>
+                        )}
+
+                        {!item.has_comment && !item.segmented && (
+                          <View style={styles.helperIndicatorContainer}>
+                            <Text variant="labelSmall">legacy</Text>
+                          </View>
+                        )}
+                      </View>
+                    </List.Section>
+                  </Pressable>
+                )}
+              />
+            </List.Accordion>
+          </View>
         )}
 
         {yellowBrickRoad && (
@@ -159,5 +335,15 @@ const styles = StyleSheet.create({
   rightText: {
     fontSize: 12,
     fontWeight: "600",
+  },
+  helperIndicatorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 2,
+    borderColor: Color.borderColor,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
   },
 });

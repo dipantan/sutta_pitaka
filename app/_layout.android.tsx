@@ -1,31 +1,55 @@
 import { Color } from "@/constants/color";
 import { Theme } from "@/constants/theme";
+import { mmkvPersister, queryClient } from "@/query/client";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { Stack } from "expo-router";
+import { useEffect } from "react";
 import { StatusBar, StyleSheet, View } from "react-native";
+import BootSplash from "react-native-bootsplash";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PaperProvider } from "react-native-paper";
 
 export default function RootLayout() {
+  useEffect(() => {
+    BootSplash.hide({ fade: false });
+  }, []);
+
   return (
-    <PaperProvider theme={Theme}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <View
-          style={[
-            styles.statusBarBackground,
-            {
-              backgroundColor: Color.primaryColorLight,
-              height: StatusBar.currentHeight,
-            },
-          ]}
-        />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: Color.primaryBackgroundColor },
-          }}
-        />
-      </GestureHandlerRootView>
-    </PaperProvider>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister: mmkvPersister,
+      }}
+    >
+      <PaperProvider theme={Theme}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <View
+            style={[
+              styles.statusBarBackground,
+              {
+                backgroundColor: Color.primaryColorLight,
+                height: StatusBar.currentHeight,
+              },
+            ]}
+          />
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: Color.primaryBackgroundColor },
+            }}
+          >
+            <Stack.Screen
+              name="comment"
+              options={{
+                presentation: "transparentModal",
+                animation: "fade",
+                headerShown: false,
+              }}
+            />
+          </Stack>
+        </GestureHandlerRootView>
+      </PaperProvider>
+    </PersistQueryClientProvider>
   );
 }
 
