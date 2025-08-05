@@ -11,7 +11,10 @@
     "lint": "expo lint",
     "prebuild:ios": "expo prebuild --clean --platform ios",
     "prebuild:android": "expo prebuild --clean --platform android",
-    "build:android": "eas build -p android --profile preview"
+    "build:android": "eas build -p android --profile preview",
+    "build:local-apk": "cd android && ./gradlew assembleRelease && cd .. && mv android/app/build/outputs/apk/release/app-*-release.apk ./",
+    "create:github-release": "gh release create v$(node -p \"require('./package.json').version\") --title \"Release v$(node -p \"require('./package.json').version\")\" --notes \"Automated signed APK release for Obtainium users\" ./app-*-release.apk",
+    "build-and-release": "npm run build:local-apk && npm run create:github-release"
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
