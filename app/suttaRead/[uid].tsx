@@ -2,12 +2,13 @@ import { BillaraSuttaByAuthor, SuttaByAuthor } from "@/api/endpoints";
 import instance from "@/api/instance";
 import { Color } from "@/constants/color";
 import { cssStyles } from "@/styles/css";
+import { ReaderScreenProps } from "@/types";
 import { BillaraSuttaType } from "@/types/bilarasutta";
 import { LegacySutta } from "@/types/legacySutta";
-import { Translation } from "@/types/suttaplex";
+import { convertToHtml } from "@/utils";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import React, { useState } from "react";
+import React from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -16,15 +17,13 @@ import {
   View,
 } from "react-native";
 import { Appbar, Text } from "react-native-paper";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
-import { IData } from "../vaggaList/[uid]";
 
-const fetchTranslation = async (
+export const fetchTranslation = async (
   uid: string,
   author_uid: string,
   currentLanguage: string,
-  segmented: boolean
+  segmented?: boolean
 ) => {
   let response = null;
 
@@ -42,33 +41,9 @@ const fetchTranslation = async (
   return response;
 };
 
-interface Props extends Translation, IData {
-  uid: string;
-  segmented?: string;
-  extraData?: string;
-}
-
 const SuttaDetails = () => {
-  const { segmented, author_uid, lang, uid, author, author_short, title } =
-    useLocalSearchParams<Props>();
-  const { top } = useSafeAreaInsets();
-
-  const [showComment, setShowComment] = useState({
-    state: false,
-    data: "",
-  });
-
-  const openComment = (value: string) =>
-    setShowComment({
-      state: true,
-      data: value,
-    });
-
-  const closeComment = () =>
-    setShowComment({
-      state: false,
-      data: "",
-    });
+  const { segmented, author_uid, lang, uid, author, author_short } =
+    useLocalSearchParams<ReaderScreenProps>();
 
   const isSegmented = segmented === "true";
 
@@ -78,36 +53,6 @@ const SuttaDetails = () => {
     enabled: !!uid && !!author_uid && !!lang,
     refetchOnMount: "always",
   });
-
-  function convertToHtml(data: BillaraSuttaType): string {
-    if (!data?.keys_order) return "No content available";
-
-    let html = "";
-    for (const key of data.keys_order) {
-      const template = data.html_text?.[key] || "";
-      const translation = data?.translation_text?.[key] || "";
-      const root = data.root_text?.[key] || "";
-      const comment = data?.comment_text?.[key] || null;
-
-      if (template.includes("{}")) {
-        html +=
-          `<span class='segment' id='${key}'>` +
-          template.replace("{}", `<span class="root">${root}</span>`) +
-          template.replace(
-            "{}",
-            `<span class="translation"><span class="text">${translation}</span>${
-              comment
-                ? `<span class="comment" data-tooltip="${comment}">${comment}</span>`
-                : ""
-            }</span>`
-          ) +
-          "</span>";
-      } else {
-        html += template;
-      }
-    }
-    return html || "No content available";
-  }
 
   // JavaScript to inject into WebView
   const injectedJavaScript = `
@@ -191,6 +136,7 @@ const SuttaDetails = () => {
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title={`${author || author_short || "Unknown"}`} />
       </Appbar.Header>
+
       <WebView
         source={{ html: htmlContent }}
         style={styles.webview}

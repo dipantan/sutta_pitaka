@@ -1,5 +1,6 @@
 import { Color } from "@/constants/color";
 import useLanguageStore from "@/stores/useLanguage";
+import { TMenuCard } from "@/types";
 import { Translation } from "@/types/suttaplex";
 import { htmlToText } from "@/utils";
 import { wp } from "@/utils/responsive";
@@ -14,13 +15,14 @@ const MenuCard = ({
   headerSubtitle,
   headerTitle,
   leftText,
-  onPress,
   yellowBrickRoadCount,
   yellowBrickRoad,
   child_range,
   translations,
   rightText,
+  onPress,
   onAuthorPress,
+  onLongPress,
 }: TMenuCard) => {
   const { colors } = useTheme();
   const currentLanguage = useLanguageStore((state) => state.currentLanguage);
@@ -133,17 +135,17 @@ const MenuCard = ({
                 )}
                 style={{
                   gap: 16,
-                  // flexWrap: "wrap",
                 }}
                 renderItem={({ item }: { item: Translation }) => (
-                  <Pressable onPress={() => onAuthorPress?.(item)}>
+                  <Pressable
+                    onPress={() => onAuthorPress?.(item)}
+                    onLongPress={() => onLongPress?.(item)}
+                  >
                     <List.Section
                       style={{
                         flexDirection: "row",
                         alignItems: "center",
                         gap: 8,
-                        // flexWrap: "nowrap",
-                        // flex: 1,
                       }}
                     >
                       <List.Icon
@@ -214,7 +216,10 @@ const MenuCard = ({
                   gap: 16,
                 }}
                 renderItem={({ item }: { item: Translation }) => (
-                  <Pressable onPress={() => onAuthorPress?.(item)}>
+                  <Pressable
+                    onPress={() => onAuthorPress?.(item)}
+                    onLongPress={() => onLongPress?.(item)}
+                  >
                     <List.Section
                       style={{
                         flexDirection: "row",
@@ -290,7 +295,8 @@ const MenuCard = ({
             }}
           >
             <Text variant="labelSmall">
-              {yellowBrickRoadCount} {currentLanguage?.name}
+              {yellowBrickRoadCount}{" "}
+              {currentLanguage?.name || currentLanguage?.iso_code}
             </Text>
           </View>
         )}

@@ -3,6 +3,8 @@ import instance from "@/api/instance";
 import MenuCard from "@/components/MenuCard";
 import { Color } from "@/constants/color";
 import useLanguageStore from "@/stores/useLanguage";
+import useTab from "@/stores/useTab";
+import Styles from "@/styles";
 import { Suttaplex, SuttaRoot } from "@/types/suttaplex";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
@@ -15,7 +17,7 @@ import {
   StatusBar,
   View,
 } from "react-native";
-import { Appbar, List } from "react-native-paper";
+import { Appbar, List, Text } from "react-native-paper";
 
 export type IData = {
   uid: string;
@@ -62,6 +64,7 @@ const fetchVaggaAndSuttaPlex = async (
 const VaggaList = () => {
   const { uid, title } = useLocalSearchParams();
   const currentLanguage = useLanguageStore((state) => state.currentLanguage);
+  const { items, addItem } = useTab();
 
   const { data, isLoading } = useQuery({
     queryKey: ["vaggaList", uid, currentLanguage?.iso_code],
@@ -80,6 +83,26 @@ const VaggaList = () => {
       >
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title={title || "Vaggas"} />
+
+        {items.length > 0 && (
+          <Pressable
+            style={Styles.tabButton}
+            onPress={() => {
+              router.push({
+                pathname: "/tabs/[uid]",
+                params: {
+                  uid: items[0]?.uid,
+                  show: "true",
+                },
+              });
+            }}
+          >
+            <Text style={{ color: Color.invertedTextColor }}>
+              {items.length}
+            </Text>
+          </Pressable>
+        )}
+
         <Pressable
           style={{
             paddingRight: 8,
@@ -131,15 +154,57 @@ const VaggaList = () => {
                 }
               }}
               onAuthorPress={(translation) => {
-                router.navigate({
-                  pathname: "/suttaRead/[id]",
+                // set to store
+                addItem({
+                  ...item,
+                  extraData: item.extraData,
+                  ...translation,
+                  segmented: translation.segmented,
+                });
+
+                router.push({
+                  pathname: "/tabs/[uid]",
                   params: {
-                    ...item,
-                    extraData: JSON.stringify(item.extraData),
-                    ...translation,
+                    uid: item.uid,
+                    author_uid: translation.author_uid,
                   },
                 });
               }}
+              // onLongPress={(translation) => {
+              //   if (item.node_type === "leaf") {
+              //     Alert.alert(
+              //       "Alert",
+              //       "Open in new tab?",
+              //       [
+              //         {
+              //           text: "Cancel",
+              //           style: "cancel",
+              //         },
+              //         {
+              //           text: "Open",
+              //           onPress: () => {
+              //             // set to store
+              //             addItem({
+              //               ...item,
+              //               extraData: item.extraData,
+              //               ...translation,
+              //               segmented: translation.segmented,
+              //             });
+
+              //             router.push({
+              //               pathname: "/tabs/[uid]",
+              //               params: {
+              //                 uid: item.uid,
+              //                 author_uid: translation.author_uid
+              //               },
+              //             });
+              //           },
+              //         },
+              //       ],
+              //       {}
+              //     );
+              //   }
+              // }}
             />
           )}
           showsVerticalScrollIndicator={false}

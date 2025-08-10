@@ -3,6 +3,8 @@ import MenuCard from "@/components/MenuCard";
 import { Color } from "@/constants/color";
 import useLanguageStore from "@/stores/useLanguage";
 import useMenuStore from "@/stores/useMenu";
+import useTab from "@/stores/useTab";
+import Styles from "@/styles";
 import { NikayaMapper } from "@/utils";
 import { margin, padding, spacing, wp } from "@/utils/responsive";
 import { AntDesign, Entypo, MaterialIcons } from "@expo/vector-icons";
@@ -55,6 +57,8 @@ export default function Index() {
   const menuError = useMenuStore((state) => state.error);
   const menuloading = useMenuStore((state) => state.loading);
 
+  const { items } = useTab();
+
   const { top } = useSafeAreaInsets();
 
   useEffect(() => {
@@ -102,6 +106,25 @@ export default function Index() {
       >
         <Appbar.BackAction onPress={() => router.back()} />
         <Appbar.Content title={menu?.root_name} />
+
+        {items.length > 0 && (
+          <Pressable
+            style={Styles.tabButton}
+            onPress={() => {
+              router.push({
+                pathname: "/tabs/[uid]",
+                params: {
+                  uid: items[0]?.uid,
+                  show: "true",
+                },
+              });
+            }}
+          >
+            <Text style={{ color: Color.invertedTextColor }}>
+              {items.length}
+            </Text>
+          </Pressable>
+        )}
 
         <Pressable
           style={{
