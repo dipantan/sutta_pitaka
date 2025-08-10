@@ -1,4 +1,5 @@
 import { Color } from "@/constants/color";
+import { BillaraSuttaType } from "@/types/bilarasutta";
 import parse from "html-react-parser";
 import { StyleSheet } from "react-native";
 import { Text } from "react-native-paper";
@@ -193,7 +194,7 @@ const htmlToText = (htmlString: any) => {
 
 /**
  * Filters an array of items based on their type, prioritizing "branch" type if present.
- * 
+ *
  * @param {any[]} data - The input array to filter
  * @returns {any[]} An array containing only items of the most significant type
  * - If any "branch" type items exist, returns only "branch" items
@@ -228,11 +229,35 @@ const removeFirstItem = (arr: any[]) => {
   return arr;
 };
 
-export {
-  
-  
-  htmlToText,
-  NikayaMapper,
-  
-};
+function convertToHtml(data: BillaraSuttaType): string {
+  if (!data?.keys_order) return "No content available";
+
+  let html = "";
+  for (const key of data.keys_order) {
+    const template = data.html_text?.[key] || "";
+    const translation = data?.translation_text?.[key] || "";
+    const root = data.root_text?.[key] || "";
+    const comment = data?.comment_text?.[key] || null;
+
+    if (template.includes("{}")) {
+      html +=
+        `<span class='segment' id='${key}'>` +
+        template.replace("{}", `<span class="root">${root}</span>`) +
+        template.replace(
+          "{}",
+          `<span class="translation"><span class="text">${translation}</span>${
+            comment
+              ? `<span class="comment" data-tooltip="${comment}">${comment}</span>`
+              : ""
+          }</span>`
+        ) +
+        "</span>";
+    } else {
+      html += template;
+    }
+  }
+  return html || "No content available";
+}
+
+export { convertToHtml, htmlToText, NikayaMapper };
 

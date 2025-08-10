@@ -1,3 +1,6 @@
+import { IData } from "@/app/vaggaList/[uid]";
+import { Translation } from "./suttaplex";
+
 type LanguageStore = {
   languages: Language[];
   currentLanguage: Language | null;
@@ -70,6 +73,7 @@ type TMenuCard = {
   setIsExpanded?: (isExpanded: boolean) => void;
   onPress?: () => void;
   onAuthorPress?: (translation: Translation) => void;
+  onLongPress?: (translation: Translation) => void;
 };
 
 type ISutta = {
@@ -114,3 +118,10 @@ type ISutta = {
     uid: string;
   };
 };
+
+interface ReaderScreenProps extends Translation, IData {
+  uid: string;
+  segmented?: boolean;
+  extraData?: string | any;
+  image?: string;
+}
