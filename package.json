@@ -1,7 +1,7 @@
 {
   "name": "sutta_pitaka",
   "main": "expo-router/entry",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
@@ -13,8 +13,8 @@
     "prebuild:android": "expo prebuild --clean --platform android",
     "build:android": "eas build -p android --profile preview",
     "build:local-apk": "cd android && ./gradlew assembleRelease && cd .. && mv android/app/build/outputs/apk/release/app-*-release.apk ./",
-    "create:github-release": "gh release create v$(node -p \"require('./package.json').version\") --title \"Release v$(node -p \"require('./package.json').version\")\" --notes \"Automated signed APK release for Obtainium users\" ./app-*-release.apk",
-    "build-and-release": "npm run build:local-apk && npm run create:github-release"
+    "create:github-release": "node -e \"const fs = require('fs'); const notes = fs.existsSync('changelog.md') ? fs.readFileSync('changelog.md', 'utf8').trim() : ''; if (!notes) { console.error('Error: changelog.md is missing or empty'); process.exit(1); } process.exit(0);\" && [ -z \"$TAG\" ] && { echo 'Error: Tag name is required. Use --tag=<tag-name>'; exit 1; } || gh release create \"$TAG\" --notes-file changelog.md ./app-*-release.apk",
+    "build-and-release": "npm run build:local-apk && npm run create:github-release --tag=\"$TAG\""
   },
   "dependencies": {
     "@expo/vector-icons": "^14.1.0",
@@ -38,6 +38,7 @@
     "react": "19.0.0",
     "react-dom": "19.0.0",
     "react-native": "0.79.5",
+    "react-native-blob-util": "^0.22.2",
     "react-native-bootsplash": "^6.3.10",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-mmkv": "^3.3.0",
@@ -53,6 +54,7 @@
     "zustand": "^5.0.5"
   },
   "devDependencies": {
+    "@react-native-community/cli": "latest",
     "@types/react": "~19.0.10",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~9.2.0",
