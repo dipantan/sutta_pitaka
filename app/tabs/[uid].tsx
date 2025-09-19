@@ -6,11 +6,11 @@ import { BillaraSuttaType } from "@/types/bilarasutta";
 import { convertToHtml } from "@/utils";
 import { wp } from "@/utils/responsive";
 import { useQuery } from "@tanstack/react-query";
-import * as FileSystem from "expo-file-system";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Platform,
   Pressable,
@@ -18,6 +18,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
+import ReactNativeBlobUtil from "react-native-blob-util";
 import { Appbar, Card, IconButton, Text } from "react-native-paper";
 import { captureRef, releaseCapture } from "react-native-view-shot";
 import WebView from "react-native-webview";
@@ -103,7 +104,7 @@ const TabCard = ({
         />
       )}
     />
-    <Card.Cover source={{ uri: item?.image }} resizeMode="cover" />
+    <Card.Cover source={{ uri: `file:///${item?.image}` }} resizeMode="cover" />
   </Card>
 );
 
@@ -233,32 +234,30 @@ const Tabs = () => {
     try {
       const uri = await captureRef(viewShotRef, {
         format: "png",
-        quality: 0.8,
+        quality: 0.2,
+        fileName: `${uid}-${selectedAuthorUid}`,
       });
 
-      // Ensure the screenshots directory exists
-      const screenshotsDir = `${FileSystem.documentDirectory}screenshots/`;
-      const dirInfo = await FileSystem.getInfoAsync(screenshotsDir);
+      // Define the screenshots directory using react-native-blob-util
+      const screenshotsDir = `${ReactNativeBlobUtil.fs.dirs.DocumentDir}/screenshots/`;
+      const fileName = uri.split("/").pop(); // Extract file name from URI
+      const destination = `${screenshotsDir}${fileName}`;
 
-      if (!dirInfo.exists) {
-        await FileSystem.makeDirectoryAsync(screenshotsDir, {
-          intermediates: true,
-        });
+      // Check if directory exists, create if it doesn't
+      const dirExists = await ReactNativeBlobUtil.fs.exists(screenshotsDir);
+      if (!dirExists) {
+        await ReactNativeBlobUtil.fs.mkdir(screenshotsDir);
       }
 
-      // save in app data
-      const destination = `${FileSystem.documentDirectory}screenshots/${uri.split("/").pop()}`;
-
-      await FileSystem.copyAsync({
-        from: uri,
-        to: destination,
-      });
+      // Copy the captured file to the destination
+      await ReactNativeBlobUtil.fs.cp(uri, destination);
 
       releaseCapture(uri);
 
       updateImage(selectedUid, selectedAuthorUid, destination);
       setShowSwitcher(true);
     } catch (error) {
+      Alert.alert("", error?.message || "Failed to capture screenshot");
       console.error("Error capturing screenshot:", error);
     }
   };
