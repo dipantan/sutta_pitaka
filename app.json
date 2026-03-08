@@ -7,10 +7,13 @@
     "icon": "./assets/images/icon.png",
     "scheme": "suttas",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "description": "A digital collection of the Sutta Pitaka, part of the Pali Canon of Theravada Buddhism.",
     "githubUrl": "https://github.com/dipantan/sutta_pitaka",
-    "platforms": ["ios", "android", "web"],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
     "owner": "dipantan",
     "updates": {
       "fallbackToCacheTimeout": 0,
@@ -22,7 +25,6 @@
       "bundleIdentifier": "com.suttas"
     },
     "android": {
-      "edgeToEdgeEnabled": true,
       "package": "com.suttas"
     },
     "plugins": [
@@ -38,7 +40,8 @@
             "darkContentBarsStyle": true
           }
         }
-      ]
+      ],
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true

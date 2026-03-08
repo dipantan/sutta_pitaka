@@ -10,12 +10,9 @@ node_modules/
 .expo-shared/
 
 # React Native Build files
-/android/app/build/
-/android/app/release/*
+/android
 **/build/
-**/android/app/src/main/assets/index.android.bundle
-**/android/app/src/main/assets/sourcemap.android.bundle.map
-/ios/Pods/
+/ios
 *.pbxproj
 dist/*
 
