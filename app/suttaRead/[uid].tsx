@@ -1,58 +1,38 @@
-import { BillaraSuttaByAuthor, SuttaByAuthor } from "@/api/endpoints";
-import instance from "@/api/instance";
 import { Color } from "@/constants/color";
 import { cssStyles } from "@/styles/css";
-import { ReaderScreenProps } from "@/types";
-import { BillaraSuttaType } from "@/types/bilarasutta";
-import { LegacySutta } from "@/types/legacySutta";
-import { convertToHtml } from "@/utils";
+import { loadSuttaContent, SuttaSegment } from "@/utils/offlineQueries";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
-import React from "react";
+import React, { useMemo } from "react";
 import {
-  ActivityIndicator,
-  Platform,
-  StatusBar,
-  StyleSheet,
-  View,
+    ActivityIndicator,
+    Platform,
+    StatusBar,
+    StyleSheet,
+    View,
 } from "react-native";
 import { Appbar, Text } from "react-native-paper";
 import { WebView } from "react-native-webview";
 
-export const fetchTranslation = async (
-  uid: string,
-  author_uid: string,
-  currentLanguage: string,
-  segmented?: boolean
-) => {
-  let response = null;
-
-  if (segmented) {
-    const { data } = await instance.get<BillaraSuttaType>(
-      BillaraSuttaByAuthor(uid, author_uid, currentLanguage)
-    );
-    response = data;
-  } else {
-    const { data } = await instance.get<LegacySutta>(
-      SuttaByAuthor(uid, author_uid, currentLanguage)
-    );
-    response = data;
-  }
-  return response;
-};
-
-const SuttaDetails = () => {
-  const { segmented, author_uid, lang, uid, author, author_short } =
-    useLocalSearchParams<ReaderScreenProps>();
-
-  const isSegmented = segmented === "true";
+const SuttaReader = () => {
+  const { author_uid, lang, uid, author, author_short } =
+    useLocalSearchParams<{
+      author_uid?: string;
+      lang?: string;
+      uid?: string;
+      author?: string;
+      author_short?: string;
+    }>();
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ["suttaRead", uid, author_uid, lang],
-    queryFn: () => fetchTranslation(uid, author_uid, lang, isSegmented),
+    queryKey: ["suttaContent", uid, author_uid, lang],
+    queryFn: () => loadSuttaContent(uid as string, author_uid as string, lang as string),
     enabled: !!uid && !!author_uid && !!lang,
-    refetchOnMount: "always",
   });
+
+  const segments = data?.segments ?? [];
+
+  const htmlContent = useMemo(() => buildSegmentsHtml(segments), [segments]);
 
   // JavaScript to inject into WebView
   const injectedJavaScript = `
@@ -112,29 +92,13 @@ const SuttaDetails = () => {
     );
   }
 
-  const htmlContent = `
-    <html>
-      <head>
-        ${cssStyles}
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      </head>
-      <body style="color: #fff; margin: 16">
-        ${
-          isSegmented
-            ? convertToHtml(data as BillaraSuttaType)
-            : data?.root_text?.text || "No text available"
-        }
-      </body>
-    </html>
-  `;
-
   return (
     <View style={{ flex: 1 }}>
       <Appbar.Header
         statusBarHeight={Platform.OS === "ios" ? 5 : StatusBar.currentHeight}
       >
         <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content title={`${author || author_short || "Unknown"}`} />
+        <Appbar.Content title={`${author || author_short || data?.translation?.author || "Unknown"}`} />
       </Appbar.Header>
 
       <WebView
@@ -149,7 +113,7 @@ const SuttaDetails = () => {
   );
 };
 
-export default SuttaDetails;
+export default SuttaReader;
 
 const styles = StyleSheet.create({
   webview: {
@@ -158,3 +122,28 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
 });
+
+function buildSegmentsHtml(segments: SuttaSegment[]) {
+  const body = segments
+    .map(
+      (segment) => `
+        <div class="segment">
+          ${segment.root ? `<div class="root">${segment.root}</div>` : ""}
+          <div class="translation">${segment.translation}</div>
+        </div>
+      `
+    )
+    .join("\n");
+
+  return `
+    <html>
+      <head>
+        ${cssStyles}
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="color: #fff; margin: 16">
+        ${body || "<p>No text available.</p>"}
+      </body>
+    </html>
+  `;
+}

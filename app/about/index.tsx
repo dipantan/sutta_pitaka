@@ -1,23 +1,31 @@
 import Mission from "@/components/Mission";
 import { Color } from "@/constants/color";
+import { getDatasetMetadata } from "@/utils/database";
 import { hp, wp } from "@/utils/responsive";
 import { EvilIcons, Feather } from "@expo/vector-icons";
+import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import { MotiView } from "moti";
 import React from "react";
 import {
-  Image,
-  Linking,
-  Platform,
-  Pressable,
-  StatusBar,
-  StyleSheet,
-  View,
+    Image,
+    Linking,
+    Platform,
+    Pressable,
+    StatusBar,
+    StyleSheet,
+    View,
 } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { Appbar, Card, Text } from "react-native-paper";
 
 const About = () => {
+  const { data: metadata, isLoading } = useQuery({
+    queryKey: ["datasetMetadata"],
+    queryFn: getDatasetMetadata,
+    staleTime: Infinity,
+  });
+
   return (
     <View style={{ flex: 1 }}>
       <Appbar.Header
@@ -83,10 +91,7 @@ const About = () => {
           />
         </View>
 
-        <Text
-          variant="displaySmall"
-          style={{ textAlign: "center", fontWeight: "600" }}
-        >
+        <Text variant="displaySmall" style={{ textAlign: "center", fontWeight: "600" }}>
           About Sutta Pitaka
         </Text>
 
@@ -94,6 +99,32 @@ const About = () => {
           A peaceful journey through the teachings of the Buddha, bringing
           ancient wisdom to the modern world.
         </Text>
+
+        <Card style={styles.card}>
+          <Card.Content>
+            <Text style={styles.section}>Dataset Version</Text>
+            {isLoading ? (
+              <Text style={styles.text}>Loading dataset metadata…</Text>
+            ) : metadata ? (
+              <View style={{ gap: hp(1) }}>
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Commit</Text>
+                  <Text style={styles.metaValue}>{metadata.dataset_commit}</Text>
+                </View>
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Dataset Date</Text>
+                  <Text style={styles.metaValue}>{metadata.dataset_date}</Text>
+                </View>
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Bundled At</Text>
+                  <Text style={styles.metaValue}>{metadata.dataset_updated_at}</Text>
+                </View>
+              </View>
+            ) : (
+              <Text style={styles.text}>Metadata unavailable.</Text>
+            )}
+          </Card.Content>
+        </Card>
 
         <Card style={styles.card}>
           <Card.Content>
@@ -192,6 +223,21 @@ const styles = StyleSheet.create({
     color: "#666",
     fontStyle: "italic",
     lineHeight: wp(5),
+  },
+  metaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  metaLabel: {
+    fontSize: 14,
+    color: Color.invertedTextColor,
+    fontWeight: "600",
+  },
+  metaValue: {
+    fontSize: 14,
+    color: Color.primaryAlternateColor,
+    fontFamily: "monospace",
   },
   button: {
     marginVertical: 8,

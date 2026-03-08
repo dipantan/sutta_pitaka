@@ -1,14 +1,23 @@
 import { Color } from "@/constants/color";
+import { loadPitakas } from "@/utils/offlineQueries";
 import { hp, wp } from "@/utils/responsive";
 import { MaterialCommunityIcons, Octicons } from "@expo/vector-icons";
-import { Link } from "expo-router";
+import { useQuery } from "@tanstack/react-query";
+import { Link, router } from "expo-router";
 import { MotiView } from "moti";
 import React from "react";
-import { StatusBar, StyleSheet, View } from "react-native";
+import { ActivityIndicator, StatusBar, StyleSheet, View } from "react-native";
 import { ScrollView } from "react-native-gesture-handler";
 import { Avatar, Button, Card, Text } from "react-native-paper";
 
 const App = () => {
+  const { data: pitakas, isLoading, error } = useQuery({
+    queryKey: ["pitakas"],
+    queryFn: loadPitakas,
+  });
+
+  const headerMarginTop = (StatusBar.currentHeight ?? 0) + hp(2);
+
   return (
     <ScrollView
       style={{
@@ -30,7 +39,7 @@ const App = () => {
         }}
         style={{
           alignItems: "center",
-          marginTop: StatusBar.currentHeight + hp(2),
+          marginTop: headerMarginTop,
         }}
       >
         <Octicons
@@ -77,19 +86,23 @@ const App = () => {
           modern interface. Explore ancient wisdom for contemporary life.
         </Text>
 
-        <Link href={"/suttaMenu"} asChild>
-          <Button
-            buttonColor={Color.primaryColor}
-            textColor={Color.invertedTextColor}
-            style={{
-              marginVertical: wp(4),
-              width: wp(40),
-              borderRadius: wp(2),
-            }}
-          >
-            Explore Suttas
-          </Button>
-        </Link>
+        <Button
+          buttonColor={Color.primaryColor}
+          textColor={Color.invertedTextColor}
+          style={{
+            marginVertical: wp(4),
+            width: wp(40),
+            borderRadius: wp(2),
+          }}
+          onPress={() => {
+            if (pitakas && pitakas.length) {
+              router.push({ pathname: "/suttaMenu", params: { pitaka: pitakas[0].pitaka } });
+            }
+          }}
+          disabled={!pitakas?.length}
+        >
+          Explore Suttas
+        </Button>
 
         <Link href={"/about"} asChild>
           <Button
@@ -116,47 +129,60 @@ const App = () => {
           </Button>
         </Link>
 
-        <View
-          style={{
-            marginVertical: wp(5),
-            gap: wp(4),
-          }}
-        >
-          {/* sacred text */}
-          <Card
-            style={{
-              backgroundColor: Color.secondaryBackgroundColor,
-              width: wp(90),
-            }}
-            contentStyle={{
-              padding: 8,
-              alignItems: "center",
-              gap: wp(3),
-              paddingVertical: wp(3),
-            }}
-          >
-            <Avatar.Icon
-              size={wp(10)}
-              style={{
-                alignItems: "center",
-                justifyContent: "center",
-              }}
-              icon={() => (
-                <Octicons
-                  name="book"
-                  size={wp(5)}
-                  color={Color.invertedTextColor}
+        <View style={styles.sectionContainer}>
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={Color.primaryColor} />
+              <Text style={{ marginTop: 12 }}>Loading collections…</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.loadingContainer}>
+              <Text style={{ color: Color.primaryColor }}>
+                {(error as Error).message || "Unable to load pitakas"}
+              </Text>
+            </View>
+          ) : (
+            pitakas?.map((item) => (
+              <Card
+                key={item.uid}
+                style={styles.pitakaCard}
+                contentStyle={styles.pitakaCardContent}
+                onPress={() =>
+                  router.push({
+                    pathname: "/suttaMenu",
+                    params: { pitaka: item.pitaka },
+                  })
+                }
+              >
+                <Avatar.Icon
+                  size={wp(10)}
+                  style={styles.pitakaIcon}
+                  icon={() => (
+                    <MaterialCommunityIcons
+                      name="library"
+                      size={wp(5)}
+                      color={Color.invertedTextColor}
+                    />
+                  )}
                 />
-              )}
-            />
-            <Text variant="bodyLarge" style={{ fontWeight: "700" }}>
-              Sacred Texts
-            </Text>
-            <Text variant="bodyMedium" style={{ textAlign: "center" }}>
-              Access the complete collection of Buddha&apos;s teachings with
-              modern search and organization.
-            </Text>
-          </Card>
+                <Text variant="titleMedium" style={{ fontWeight: "700" }}>
+                  {item.translated_name || item.root_name}
+                </Text>
+                <Text
+                  variant="bodyMedium"
+                  style={{ textAlign: "center" }}
+                  numberOfLines={3}
+                >
+                  {item.blurb || "Tap to explore this collection offline."}
+                </Text>
+                {item.yellow_brick_road_count ? (
+                  <Text variant="labelSmall" style={{ color: Color.iconColor }}>
+                    {item.yellow_brick_road_count} curated discourses
+                  </Text>
+                ) : null}
+              </Card>
+            ))
+          )}
 
           {/* mindful design */}
           <Card
@@ -239,4 +265,33 @@ const App = () => {
 
 export default App;
 
-const styles = StyleSheet.create({});
+const styles = StyleSheet.create({
+  sectionContainer: {
+    marginVertical: wp(5),
+    gap: wp(4),
+  },
+  loadingContainer: {
+    width: wp(90),
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: wp(6),
+  },
+  pitakaCard: {
+    backgroundColor: Color.secondaryBackgroundColor,
+    width: wp(90),
+  },
+  pitakaCardContent: {
+    padding: 8,
+    alignItems: "center",
+    gap: wp(3),
+    paddingVertical: wp(3),
+  },
+  pitakaIcon: {
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Color.primaryAccentColor,
+  },
+  errorText: {
+    color: Color.primaryColor,
+  },
+});

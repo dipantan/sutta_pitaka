@@ -2,10 +2,10 @@ import { Color } from "@/constants/color";
 import useTab from "@/stores/useTab";
 import { cssStyles } from "@/styles/css";
 import { ReaderScreenProps } from "@/types";
-import { BillaraSuttaType } from "@/types/bilarasutta";
-import { convertToHtml } from "@/utils";
+import { loadSuttaContent, SuttaContent, SuttaSegment } from "@/utils/offlineQueries";
 import { wp } from "@/utils/responsive";
 import { useQuery } from "@tanstack/react-query";
+import * as FileSystem from "expo-file-system/legacy";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useRef, useState } from "react";
 import {
@@ -18,11 +18,9 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import ReactNativeBlobUtil from "react-native-blob-util";
 import { Appbar, Card, IconButton, Text } from "react-native-paper";
 import { captureRef, releaseCapture } from "react-native-view-shot";
 import WebView from "react-native-webview";
-import { fetchTranslation } from "../suttaRead/[uid]";
 
 // Constants
 const INJECTED_JAVASCRIPT = `
@@ -82,7 +80,7 @@ const TabCard = ({
   onClose,
   isLastTab,
 }: {
-  item: any;
+  item: ReaderScreenProps;
   onSelect: (uid: string, author_uid: string) => void;
   onClose: (uid: string, author_uid: string) => void;
   isLastTab: boolean;
@@ -157,7 +155,7 @@ const ContentHeader = ({
   author_uid,
 }: {
   selectedUid: string;
-  items: any[];
+  items: ReaderScreenProps[];
   onBack: () => void;
   onCapture: () => void;
   author_uid: string;
@@ -185,9 +183,9 @@ const ContentHeader = ({
 
 const Tabs = () => {
   const { uid, show, author_uid } = useLocalSearchParams<{
-    uid: string;
+    uid?: string;
     show?: string;
-    author_uid: string;
+    author_uid?: string;
   }>();
   const { getItem, removeItem, items, updateImage } = useTab();
 
@@ -207,17 +205,19 @@ const Tabs = () => {
   const viewShotRef = useRef<View>(null);
 
   // Safely get item data with fallback
-  const item = getItem(selectedUid, selectedAuthorUid) || {};
-  const { lang = "en", segmented = false } = item;
+  const item = getItem(selectedUid, selectedAuthorUid);
+  const lang = item?.lang ?? "en";
 
-  const isSegmented = segmented;
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ["suttaRead", selectedUid, selectedAuthorUid, lang],
+  const { data, isLoading, error } = useQuery<SuttaContent, Error>({
+    queryKey: ["suttaContent", selectedUid, selectedAuthorUid, lang],
     queryFn: () =>
-      fetchTranslation(selectedUid, selectedAuthorUid, lang, segmented),
+      loadSuttaContent(selectedUid as string, selectedAuthorUid as string, lang as string),
     enabled: !!selectedUid && !!selectedAuthorUid,
   });
+
+  const segments = data?.segments ?? [];
+
+  const htmlContent = buildSegmentsHtml(segments);
 
   const handleMessage = (event: { nativeEvent: { data: string } }) => {
     try {
@@ -238,41 +238,35 @@ const Tabs = () => {
         fileName: `${uid}-${selectedAuthorUid}`,
       });
 
-      // Define the screenshots directory using react-native-blob-util
-      const screenshotsDir = `${ReactNativeBlobUtil.fs.dirs.DocumentDir}/screenshots/`;
-      const fileName = uri.split("/").pop(); // Extract file name from URI
-      const destination = `${screenshotsDir}${fileName}`;
-
-      // Check if directory exists, create if it doesn't
-      const dirExists = await ReactNativeBlobUtil.fs.exists(screenshotsDir);
-      if (!dirExists) {
-        await ReactNativeBlobUtil.fs.mkdir(screenshotsDir);
+      if (!uri) {
+        throw new Error("Failed to capture view");
       }
 
-      // Copy the captured file to the destination
-      await ReactNativeBlobUtil.fs.cp(uri, destination);
+      const documentDir = FileSystem.documentDirectory ?? FileSystem.cacheDirectory;
+      if (!documentDir) {
+        throw new Error("FileSystem directory unavailable");
+      }
 
+      const screenshotsDir = `${documentDir}screenshots`;
+      const dirInfo = await FileSystem.getInfoAsync(screenshotsDir);
+      if (!dirInfo.exists) {
+        await FileSystem.makeDirectoryAsync(screenshotsDir, { intermediates: true });
+      }
+
+      const fileName = uri.split("/").pop();
+      const destination = `${screenshotsDir}/${fileName}`;
+
+      await FileSystem.copyAsync({ from: uri, to: destination });
       releaseCapture(uri);
 
       updateImage(selectedUid, selectedAuthorUid, destination);
       setShowSwitcher(true);
     } catch (error) {
-      Alert.alert("", error?.message || "Failed to capture screenshot");
-      console.error("Error capturing screenshot:", error);
+      const err = error as Error;
+      Alert.alert("", err?.message || "Failed to capture screenshot");
+      console.error("Error capturing screenshot:", err);
     }
   };
-
-  const htmlContent = `
-    <html>
-      <head>
-        ${cssStyles}
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      </head>
-      <body style="color: #fff; margin: 16">
-        ${isSegmented ? convertToHtml(data as BillaraSuttaType) : data?.root_text?.text || "No text available"}
-      </body>
-    </html>
-  `;
 
   if (isLoading) return <LoadingView />;
   if (error) return <ErrorView message={error.message} />;
@@ -292,7 +286,7 @@ const Tabs = () => {
           onClose={removeItem}
         />
       ) : (
-        <>
+        <View style={{ flex: 1 }}>
           <ContentHeader
             selectedUid={selectedUid}
             items={items}
@@ -300,7 +294,7 @@ const Tabs = () => {
               handleCapture();
               router.back();
             }}
-            author_uid={selectedAuthorUid || author_uid}
+            author_uid={selectedAuthorUid || author_uid || ""}
             onCapture={handleCapture}
           />
           <View style={{ flex: 1 }} ref={viewShotRef} collapsable={false}>
@@ -313,10 +307,35 @@ const Tabs = () => {
               onMessage={handleMessage}
             />
           </View>
-        </>
+        </View>
       )}
     </View>
   );
 };
 
 export default Tabs;
+
+function buildSegmentsHtml(segments: SuttaSegment[]) {
+  const body = segments
+    .map(
+      (segment) => `
+        <div class="segment">
+          ${segment.root ? `<div class="root">${segment.root}</div>` : ""}
+          <div class="translation">${segment.translation}</div>
+        </div>
+      `
+    )
+    .join("\n");
+
+  return `
+    <html>
+      <head>
+        ${cssStyles}
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      </head>
+      <body style="color: #fff; margin: 16">
+        ${body || "<p>No text available.</p>"}
+      </body>
+    </html>
+  `;
+}

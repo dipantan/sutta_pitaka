@@ -1,13 +1,10 @@
-import { IData } from "@/app/vaggaList/[uid]";
 import { Translation } from "./suttaplex";
 
 type LanguageStore = {
   languages: Language[];
   currentLanguage: Language | null;
-  fetchLanguage: () => Promise<void>;
+  setLanguages: (languages: Language[]) => void;
   setCurrentLanguage: (language: Language) => void;
-  error: string | null;
-  loading: boolean;
 };
 
 type Language = {
@@ -119,9 +116,14 @@ type ISutta = {
   };
 };
 
-interface ReaderScreenProps extends Translation, IData {
+interface ReaderScreenProps extends Partial<Translation> {
   uid: string;
+  author_uid: string;
+  title?: string;
+  translated_name?: string;
+  root_name?: string;
+  blurb?: string;
+  lang?: string;
   segmented?: boolean;
-  extraData?: string | any;
   image?: string;
 }

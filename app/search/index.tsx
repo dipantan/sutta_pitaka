@@ -1,36 +1,25 @@
-import instance from "@/api/instance";
 import FilterHelpCard from "@/components/FilterHelper";
 import MenuCard from "@/components/MenuCard";
 import { Color } from "@/constants/color";
 import useLanguageStore from "@/stores/useLanguage";
 import useTab from "@/stores/useTab";
-import { Suttaplex } from "@/types/suttaplex";
+import { ReaderScreenProps } from "@/types";
+import { SearchResult, searchSuttas } from "@/utils/offlineQueries";
 import { hp } from "@/utils/responsive";
 import { useQuery } from "@tanstack/react-query";
 import { router } from "expo-router";
 import React, { useState } from "react";
 import {
-  ActivityIndicator,
-  FlatList,
-  Modal,
-  Platform,
-  StatusBar,
-  StyleSheet,
-  TextInput,
-  View,
+    ActivityIndicator,
+    FlatList,
+    Modal,
+    Platform,
+    StatusBar,
+    StyleSheet,
+    TextInput,
+    View,
 } from "react-native";
 import { Appbar, IconButton, Searchbar, Text } from "react-native-paper";
-
-const fetchSearchResults = async (query: string, language: string) => {
-  const { data } = await instance.get("/search/instant", {
-    params: {
-      query,
-      language,
-    },
-  });
-
-  return data?.suttaplex;
-};
 
 const Search = () => {
   const currentLanguage = useLanguageStore((state) => state.currentLanguage);
@@ -44,10 +33,12 @@ const Search = () => {
 
   const [selectedLanguages, setShowSelectedLanguages] = useState();
 
-  const { data, isFetching, isLoading } = useQuery<Suttaplex[]>({
-    queryKey: ["search", searchQuery, currentLanguage],
-    queryFn: () => fetchSearchResults(searchQuery, currentLanguage?.iso_code!),
-    enabled: searchQuery.length > 0 && isSubmitting,
+  const langCode = currentLanguage?.iso_code;
+
+  const { data, isFetching, isLoading } = useQuery<SearchResult[]>({
+    queryKey: ["search", searchQuery, langCode],
+    queryFn: () => searchSuttas(searchQuery, langCode),
+    enabled: searchQuery.trim().length > 0 && isSubmitting,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -661,20 +652,27 @@ const Search = () => {
           renderItem={({ item }) => (
             <MenuCard
               uid={item.uid}
-              headerTitle={item.translated_title}
+              headerTitle={item.translated_title ?? item.title ?? undefined}
               translations={item.translations}
-              headerSubtitle={item.original_title}
-              description={item.blurb}
-              rightText={item.acronym}
-              leftText={item.root_lang}
+              headerSubtitle={item.title ?? undefined}
+              description={item.blurb ?? undefined}
+              rightText={item.acronym ?? undefined}
+              leftText={item.root_lang || undefined}
               onAuthorPress={(translation) => {
-                // set to store
-                addItem({
-                  ...item,
-                  extraData: item.extraData,
-                  ...translation,
+                const tabItem: ReaderScreenProps = {
+                  uid: item.uid,
+                  author_uid: translation.author_uid,
+                  lang: translation.lang,
+                  author: translation.author,
+                  author_short: translation.author_short,
                   segmented: translation.segmented,
-                });
+                  title: item.translated_title || item.title || undefined,
+                  translated_name: item.translated_title ?? undefined,
+                  root_name: item.title ?? undefined,
+                  blurb: item.blurb ?? undefined,
+                };
+
+                addItem(tabItem);
 
                 router.push({
                   pathname: "/tabs/[uid]",

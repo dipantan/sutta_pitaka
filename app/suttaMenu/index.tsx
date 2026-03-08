@@ -2,31 +2,31 @@
 import MenuCard from "@/components/MenuCard";
 import { Color } from "@/constants/color";
 import useLanguageStore from "@/stores/useLanguage";
-import useMenuStore from "@/stores/useMenu";
 import useTab from "@/stores/useTab";
 import Styles from "@/styles";
-import { NikayaMapper } from "@/utils";
+import { loadLanguages, loadMenuByPitaka, loadMenuChildrenDetails, MenuChildDetail } from "@/utils/offlineQueries";
 import { margin, padding, spacing, wp } from "@/utils/responsive";
 import { AntDesign, Entypo, MaterialIcons } from "@expo/vector-icons";
-import { router, useNavigation } from "expo-router";
-import React, { useEffect, useLayoutEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { router, useLocalSearchParams, useNavigation } from "expo-router";
+import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import {
-  FlatList,
-  LogBox,
-  Platform,
-  Pressable,
-  StatusBar,
-  TouchableOpacity,
-  View,
+    FlatList,
+    LogBox,
+    Platform,
+    Pressable,
+    StatusBar,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import {
-  ActivityIndicator,
-  Appbar,
-  Button,
-  Dialog,
-  List,
-  Menu,
-  Text,
+    ActivityIndicator,
+    Appbar,
+    Button,
+    Dialog,
+    List,
+    Menu,
+    Text,
 } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -34,45 +34,53 @@ LogBox.ignoreAllLogs();
 
 export default function Index() {
   const [visible, setVisible] = React.useState(false);
-
   const navigation = useNavigation();
-
-  const [showLanguageChooserDialog, setShowLanguageChooserDialog] =
-    useState(false);
+  const [showLanguageChooserDialog, setShowLanguageChooserDialog] = useState(false);
+  const { pitaka = "sutta" } = useLocalSearchParams<{ pitaka?: string }>();
 
   const openMenu = () => setVisible(true);
-
   const closeMenu = () => setVisible(false);
 
-  const fetchLanguage = useLanguageStore((state) => state.fetchLanguage);
+  const setLanguages = useLanguageStore((state) => state.setLanguages);
   const currentLanguage = useLanguageStore((state) => state.currentLanguage);
-  const setCurrentLanguage = useLanguageStore(
-    (state) => state.setCurrentLanguage
-  );
+  const setCurrentLanguage = useLanguageStore((state) => state.setCurrentLanguage);
   const languages = useLanguageStore((state) => state.languages);
-  const languageLoading = useLanguageStore((state) => state.loading);
 
-  const fetchMenu = useMenuStore((state) => state.fetchMenu);
-  const menu = useMenuStore((state) => state.menu);
-  const menuError = useMenuStore((state) => state.error);
-  const menuloading = useMenuStore((state) => state.loading);
+  const { data: languagesData, isLoading: languagesLoading } = useQuery({
+    queryKey: ["languages"],
+    queryFn: loadLanguages,
+  });
+
+  useEffect(() => {
+    if (languagesData && languagesData.length) {
+      setLanguages(languagesData);
+    }
+  }, [languagesData, setLanguages]);
+
+  const { data: menuRoot, isLoading: rootLoading, error: menuError } = useQuery({
+    queryKey: ["menu-root", pitaka],
+    queryFn: () => loadMenuByPitaka(pitaka as string),
+    enabled: !!pitaka,
+  });
+
+  const {
+    data: menuChildren,
+    isLoading: childrenLoading,
+  } = useQuery<MenuChildDetail[]>({
+    queryKey: ["menu-children", menuRoot?.uid],
+    queryFn: () => loadMenuChildrenDetails(menuRoot?.uid as string),
+    enabled: !!menuRoot?.uid,
+  });
 
   const { items } = useTab();
 
   const { top } = useSafeAreaInsets();
 
   useEffect(() => {
-    // dont fetch language if its already fetched
-    if (!currentLanguage) {
-      fetchLanguage();
+    if (!currentLanguage && languagesData && languagesData.length) {
+      setCurrentLanguage(languagesData[0]);
     }
-  }, []);
-
-  useEffect(() => {
-    if (currentLanguage) {
-      fetchMenu("sutta", currentLanguage?.iso_code); // only fetch the sutta menu
-    }
-  }, [currentLanguage]);
+  }, [currentLanguage, languagesData, setCurrentLanguage]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -80,7 +88,11 @@ export default function Index() {
     });
   }, [navigation]);
 
-  if (menuloading || languageLoading) {
+  const isLoading = languagesLoading || rootLoading || childrenLoading;
+
+  const displayChildren = useMemo(() => menuChildren ?? [], [menuChildren]);
+
+  if (isLoading) {
     return (
       <View
         style={{
@@ -105,7 +117,7 @@ export default function Index() {
         statusBarHeight={Platform.OS === "ios" ? 5 : StatusBar.currentHeight}
       >
         <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content title={menu?.root_name} />
+        <Appbar.Content title={menuRoot?.root_name || pitaka.toString()} />
 
         {items.length > 0 && (
           <Pressable
@@ -204,7 +216,7 @@ export default function Index() {
         }}
       >
         <FlatList
-          data={menu?.children?.slice(0, -1)} //remove the last item because it is not fall in the five nikaya
+          data={displayChildren}
           showsVerticalScrollIndicator={false}
           keyExtractor={(item) => item.uid}
           ListHeaderComponent={
@@ -216,24 +228,24 @@ export default function Index() {
               }}
             >
               <Text variant="titleMedium" style={{}}>
-                {menu?.blurb}
+                {menuRoot?.blurb}
               </Text>
             </View>
           }
           renderItem={({ item }) => (
             <MenuCard
-              description={item.blurb}
-              headerTitle={item.translated_name || item.root_name}
+              description={item.blurb ?? undefined}
+              headerTitle={item.translated_name || item.root_name || undefined}
               isExpanded={false}
-              leftText={item.root_name}
+              leftText={item.root_name ?? undefined}
               uid={item.uid}
-              yellowBrickRoad={item.yellow_brick_road}
-              yellowBrickRoadCount={item.yellow_brick_road_count}
+              yellowBrickRoad={item.yellow_brick_road ? true : undefined}
+              yellowBrickRoadCount={item.yellow_brick_road_count ?? undefined}
               onPress={() => {
                 router.push({
                   pathname: "/vaggaList/[uid]",
                   params: {
-                    uid: NikayaMapper(item.uid),
+                    uid: item.uid,
                     title: item.root_name,
                   },
                 });
@@ -249,7 +261,7 @@ export default function Index() {
               }}
             >
               <Text style={{ color: Color.onPrimaryPrimaryTextColor }}>
-                {menuError || "No menu available"}
+                {menuError?.message || "No menu available"}
               </Text>
             </View>
           }
