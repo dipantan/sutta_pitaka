@@ -1,5 +1,5 @@
 import { Asset } from "expo-asset";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import * as SQLite from "expo-sqlite";
 
 const DB_NAME = "suttacentral.db";
@@ -76,13 +76,22 @@ async function writeLocalMetadata(metadata: DatasetMetadata) {
 }
 
 async function copyAssetToFile(assetModule: any, destination: string) {
-  const asset = Asset.fromModule(assetModule);
-  await asset.downloadAsync();
-  const source = asset.localUri ?? asset.uri;
-  if (!source) {
-    throw new Error("Bundled asset missing local URI");
+  try {
+    console.log("[dataset] Resolving asset for", destination);
+    const asset = Asset.fromModule(assetModule);
+    console.log("[dataset] Asset resolved", asset);
+    await asset.downloadAsync();
+    console.log("[dataset] Asset downloaded", asset.localUri ?? asset.uri);
+    const source = asset.localUri ?? asset.uri;
+    if (!source) {
+      throw new Error("Bundled asset missing local URI");
+    }
+    await FileSystem.copyAsync({ from: source, to: destination });
+    console.log("[dataset] Asset copied to", destination);
+  } catch (error) {
+    console.error("[dataset] copyAssetToFile failed", error);
+    throw error;
   }
-  await FileSystem.copyAsync({ from: source, to: destination });
 }
 
 async function copyDatabaseIfNeeded() {
@@ -97,9 +106,20 @@ async function copyDatabaseIfNeeded() {
     storedMetadata.dataset_commit !== BUNDLED_METADATA.dataset_commit;
 
   if (shouldReplace) {
+    console.log(
+      "[dataset] Copying bundled DB →",
+      DB_DEST_PATH,
+      "(existing metadata:",
+      storedMetadata?.dataset_commit,
+      ")"
+    );
     await FileSystem.deleteAsync(DB_DEST_PATH, { idempotent: true });
+    console.log("[dataset] Copying asset to", DB_DEST_PATH);
     await copyAssetToFile(DB_ASSET, DB_DEST_PATH);
     await writeLocalMetadata(BUNDLED_METADATA);
+    console.log("[dataset] DB copy complete");
+  } else {
+    console.log("[dataset] Existing DB up-to-date, skipping copy");
   }
 }
 
@@ -109,9 +129,11 @@ let dbInstance: SQLite.SQLiteDatabase | null = null;
 export async function ensureDatasetReady() {
   if (!ensurePromise) {
     ensurePromise = (async () => {
+      console.log("[dataset] ensureDatasetReady start");
       resolvePaths();
       await copyDatabaseIfNeeded();
       const metadata = (await readLocalMetadata()) ?? BUNDLED_METADATA;
+      console.log("[dataset] ensureDatasetReady complete", metadata);
       return metadata;
     })();
   }

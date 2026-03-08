@@ -1,3 +1,4 @@
+import type { ThemeMode } from "@/constants/color";
 import { Translation } from "./suttaplex";
 
 type LanguageStore = {
@@ -5,6 +6,13 @@ type LanguageStore = {
   currentLanguage: Language | null;
   setLanguages: (languages: Language[]) => void;
   setCurrentLanguage: (language: Language) => void;
+};
+
+type ThemePreference = ThemeMode | "system";
+
+type ThemeStore = {
+  preference: ThemePreference;
+  setPreference: (preference: ThemePreference) => void;
 };
 
 type Language = {

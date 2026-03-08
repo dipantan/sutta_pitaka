@@ -5,11 +5,10 @@ import useLanguageStore from "@/stores/useLanguage";
 import useTab from "@/stores/useTab";
 import Styles from "@/styles";
 import { loadLanguages, loadMenuByPitaka, loadMenuChildrenDetails, MenuChildDetail } from "@/utils/offlineQueries";
-import { margin, padding, spacing, wp } from "@/utils/responsive";
-import { AntDesign, Entypo, MaterialIcons } from "@expo/vector-icons";
+import { Entypo } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams, useNavigation } from "expo-router";
-import React, { useEffect, useLayoutEffect, useMemo, useState } from "react";
+import React, { useEffect, useLayoutEffect, useMemo } from "react";
 import {
     FlatList,
     LogBox,
@@ -22,20 +21,16 @@ import {
 import {
     ActivityIndicator,
     Appbar,
-    Button,
-    Dialog,
     List,
     Menu,
     Text,
 } from "react-native-paper";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 LogBox.ignoreAllLogs();
 
 export default function Index() {
   const [visible, setVisible] = React.useState(false);
   const navigation = useNavigation();
-  const [showLanguageChooserDialog, setShowLanguageChooserDialog] = useState(false);
   const { pitaka = "sutta" } = useLocalSearchParams<{ pitaka?: string }>();
 
   const openMenu = () => setVisible(true);
@@ -53,9 +48,23 @@ export default function Index() {
 
   useEffect(() => {
     if (languagesData && languagesData.length) {
-      setLanguages(languagesData);
+      const supported = languagesData.filter((lang) =>
+        ["en", "pli"].includes(lang.iso_code)
+      );
+
+      const resolvedLanguages = supported.length ? supported : languagesData;
+      setLanguages(resolvedLanguages);
+
+      if (!currentLanguage) {
+        const defaultLang =
+          resolvedLanguages.find((lang) => lang.iso_code === "en") ||
+          resolvedLanguages[0];
+        if (defaultLang) {
+          setCurrentLanguage(defaultLang);
+        }
+      }
     }
-  }, [languagesData, setLanguages]);
+  }, [currentLanguage, languagesData, setCurrentLanguage, setLanguages]);
 
   const { data: menuRoot, isLoading: rootLoading, error: menuError } = useQuery({
     queryKey: ["menu-root", pitaka],
@@ -74,13 +83,11 @@ export default function Index() {
 
   const { items } = useTab();
 
-  const { top } = useSafeAreaInsets();
-
   useEffect(() => {
-    if (!currentLanguage && languagesData && languagesData.length) {
-      setCurrentLanguage(languagesData[0]);
+    if (!currentLanguage && languages.length) {
+      setCurrentLanguage(languages[0]);
     }
-  }, [currentLanguage, languagesData, setCurrentLanguage]);
+  }, [currentLanguage, languages, setCurrentLanguage]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -174,29 +181,6 @@ export default function Index() {
           <Menu.Item
             onPress={() => {
               closeMenu();
-              setShowLanguageChooserDialog(true);
-            }}
-            title={`Language: ${
-              currentLanguage ? currentLanguage.name : "Select Language"
-            }`}
-            titleStyle={{
-              fontWeight: "600",
-            }}
-            containerStyle={{
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-            trailingIcon={() => (
-              <AntDesign
-                name="right"
-                size={16}
-                color={Color.oppositeBackgroundColor}
-              />
-            )}
-          />
-          <Menu.Item
-            onPress={() => {
-              closeMenu();
               router.push("/about");
             }}
             titleStyle={{
@@ -273,118 +257,6 @@ export default function Index() {
         />
       </View>
 
-      {/* language chooser dialog */}
-      <Dialog
-        visible={showLanguageChooserDialog}
-        onDismiss={() => setShowLanguageChooserDialog(false)}
-        style={{
-          borderRadius: spacing.lg,
-          backgroundColor: Color.primaryBackgroundColor,
-        }}
-      >
-        <FlatList
-          data={languages}
-          style={{
-            marginBottom: padding.large,
-          }}
-          stickyHeaderIndices={[0]}
-          ListHeaderComponent={() => (
-            <View
-              style={{
-                backgroundColor: Color.primaryBackgroundColor,
-              }}
-            >
-              <Text
-                style={{
-                  fontWeight: "700",
-                  textAlign: "center",
-                  marginBottom: margin.medium,
-                }}
-                variant="titleMedium"
-              >
-                Choose your language
-              </Text>
-            </View>
-          )}
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => {
-                setCurrentLanguage(item);
-                setShowLanguageChooserDialog(false);
-              }}
-            >
-              <Dialog.Content
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: wp(4),
-                }}
-              >
-                <View
-                  style={{
-                    backgroundColor: Color.borderColor,
-                    paddingVertical: padding.tiny,
-                    width: wp(10),
-                    justifyContent: "center",
-                    alignItems: "center",
-                    borderRadius: 8,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontWeight: "600",
-                    }}
-                  >
-                    {item.iso_code}
-                  </Text>
-                </View>
-
-                <View
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: 8,
-                  }}
-                >
-                  <Text
-                    style={{
-                      fontWeight: "600",
-                    }}
-                    variant="bodyMedium"
-                  >
-                    {item.name}
-                  </Text>
-
-                  {currentLanguage?.iso_code === item.iso_code && (
-                    <List.Icon
-                      icon={({ color, size }) => (
-                        <MaterialIcons name="done" size={wp(4)} color={color} />
-                      )}
-                    />
-                  )}
-                </View>
-              </Dialog.Content>
-            </TouchableOpacity>
-          )}
-          keyExtractor={(item) => item.uid}
-        />
-
-        <Button
-          onPress={() => {
-            setShowLanguageChooserDialog(false);
-          }}
-          style={{
-            position: "absolute",
-            bottom: 10,
-            right: 16,
-          }}
-          buttonColor={Color.primaryColor}
-          textColor={Color.invertedTextColor}
-        >
-          Close
-        </Button>
-      </Dialog>
     </View>
   );
 }
