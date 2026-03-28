@@ -1,3 +1,4 @@
+import CommonAppBar from "@/components/CommonAppBar";
 import MenuCard from "@/components/MenuCard";
 import { Color } from "@/constants/color";
 import useLanguageStore from "@/stores/useLanguage";
@@ -11,12 +12,10 @@ import React from "react";
 import {
     ActivityIndicator,
     FlatList,
-    Platform,
     Pressable,
-    StatusBar,
-    View,
+    View
 } from "react-native";
-import { Appbar, List, Text } from "react-native-paper";
+import { Text } from "react-native-paper";
 
 const VaggaList = () => {
   const { uid, title } = useLocalSearchParams();
@@ -30,41 +29,32 @@ const VaggaList = () => {
   });
 
   return (
-    <View style={{ flex: 1 }}>
-      <Appbar.Header
-        statusBarHeight={Platform.OS === "ios" ? 5 : StatusBar.currentHeight}
-      >
-        <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content title={title || "Vaggas"} />
-
-        {items.length > 0 && (
-          <Pressable
-            style={Styles.tabButton}
-            onPress={() => {
-              router.push({
-                pathname: "/tabs/[uid]",
-                params: {
-                  uid: items[0]?.uid,
-                  show: "true",
-                },
-              });
-            }}
-          >
-            <Text style={{ color: Color.invertedTextColor }}>
-              {items.length}
-            </Text>
-          </Pressable>
-        )}
-
-        <Pressable
-          style={{
-            paddingRight: 8,
-          }}
-          onPress={() => router.push("/search")}
-        >
-          <List.Icon icon={"magnify"} color="#fff" />
-        </Pressable>
-      </Appbar.Header>
+    <View style={{ flex: 1, backgroundColor: Color.primaryBackgroundColor }}>
+      <CommonAppBar
+        title={(title as string) || "Vaggas"}
+        onBack={() => router.back()}
+        onSearch={() => router.push("/search")}
+        rightContent={
+          items.length > 0 ? (
+            <Pressable
+              style={Styles.tabButton}
+              onPress={() => {
+                router.push({
+                  pathname: "/tabs/[uid]",
+                  params: {
+                    uid: items[0]?.uid,
+                    show: "true",
+                  },
+                });
+              }}
+            >
+              <Text style={{ color: Color.invertedTextColor }}>
+                {items.length}
+              </Text>
+            </Pressable>
+          ) : null
+        }
+      />
 
       {isLoading ? (
         <View

@@ -1,4 +1,3 @@
-import { Asset } from "expo-asset";
 import * as FileSystem from "expo-file-system/legacy";
 import * as SQLite from "expo-sqlite";
 
@@ -78,16 +77,18 @@ async function writeLocalMetadata(metadata: DatasetMetadata) {
 async function copyAssetToFile(assetModule: any, destination: string) {
   try {
     console.log("[dataset] Resolving asset for", destination);
-    const asset = Asset.fromModule(assetModule);
-    console.log("[dataset] Asset resolved", asset);
-    await asset.downloadAsync();
-    console.log("[dataset] Asset downloaded", asset.localUri ?? asset.uri);
-    const source = asset.localUri ?? asset.uri;
-    if (!source) {
-      throw new Error("Bundled asset missing local URI");
+    
+    // Use direct bundled asset path to avoid expo-asset compatibility issues
+    const assetPath = (assetModule as any).default || assetModule;
+    
+    if (typeof assetPath === 'string') {
+      // Direct bundled asset path
+      await FileSystem.copyAsync({ from: assetPath, to: destination });
+      console.log("[dataset] Asset copied from bundled path to", destination);
+      return;
     }
-    await FileSystem.copyAsync({ from: source, to: destination });
-    console.log("[dataset] Asset copied to", destination);
+    
+    throw new Error("Unable to resolve bundled asset path");
   } catch (error) {
     console.error("[dataset] copyAssetToFile failed", error);
     throw error;

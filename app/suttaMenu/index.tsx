@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+import CommonAppBar from "@/components/CommonAppBar";
 import MenuCard from "@/components/MenuCard";
 import { Color } from "@/constants/color";
 import useLanguageStore from "@/stores/useLanguage";
@@ -10,21 +11,13 @@ import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams, useNavigation } from "expo-router";
 import React, { useEffect, useLayoutEffect, useMemo } from "react";
 import {
-    FlatList,
-    LogBox,
-    Platform,
-    Pressable,
-    StatusBar,
-    TouchableOpacity,
-    View,
+  FlatList,
+  LogBox,
+  Pressable,
+  TouchableOpacity,
+  View
 } from "react-native";
-import {
-    ActivityIndicator,
-    Appbar,
-    List,
-    Menu,
-    Text,
-} from "react-native-paper";
+import { ActivityIndicator, Menu, Text } from "react-native-paper";
 
 LogBox.ignoreAllLogs();
 
@@ -117,79 +110,62 @@ export default function Index() {
     <View
       style={{
         flex: 1,
+        backgroundColor: Color.primaryBackgroundColor,
       }}
     >
       {/* header */}
-      <Appbar.Header
-        statusBarHeight={Platform.OS === "ios" ? 5 : StatusBar.currentHeight}
-      >
-        <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content title={menuRoot?.root_name || pitaka.toString()} />
-
-        {items.length > 0 && (
-          <Pressable
-            style={Styles.tabButton}
-            onPress={() => {
-              router.push({
-                pathname: "/tabs/[uid]",
-                params: {
-                  uid: items[0]?.uid,
-                  show: "true",
-                },
-              });
-            }}
-          >
-            <Text style={{ color: Color.invertedTextColor }}>
-              {items.length}
-            </Text>
-          </Pressable>
-        )}
-
-        <Pressable
-          style={{
-            paddingRight: 8,
-          }}
-          onPress={() => router.push("/search")}
-        >
-          <List.Icon icon={"magnify"} color="#fff" />
-        </Pressable>
-
-        <Menu
-          visible={visible}
-          onDismiss={closeMenu}
-          anchor={
-            <TouchableOpacity onPress={openMenu} style={{}}>
-              <Entypo
-                name="dots-three-vertical"
-                size={24}
-                color={Color.oppositeBackgroundColor}
+      <CommonAppBar
+        title={menuRoot?.root_name || pitaka.toString()}
+        onBack={() => router.back()}
+        onSearch={() => router.push("/search")}
+        rightContent={
+          <>
+            {items.length > 0 && (
+              <Pressable
+                style={Styles.tabButton}
+                onPress={() => {
+                  router.push({
+                    pathname: "/tabs/[uid]",
+                    params: {
+                      uid: items[0]?.uid,
+                      show: "true",
+                    },
+                  });
+                }}
+              >
+                <Text style={{ color: Color.invertedTextColor }}>
+                  {items.length}
+                </Text>
+              </Pressable>
+            )}
+            <Menu
+              visible={visible}
+              onDismiss={closeMenu}
+              anchor={
+                <TouchableOpacity onPress={openMenu} style={{ paddingRight: 8 }}>
+                  <Entypo name="dots-three-vertical" size={24} color={Color.onPrimaryPrimaryTextColor} />
+                </TouchableOpacity>
+              }
+              style={{ backgroundColor: Color.primaryBackgroundColor }}
+              anchorPosition="top"
+              mode="elevated"
+              contentStyle={{ width: 200, padding: 0 }}
+              elevation={5}
+              keyboardShouldPersistTaps="handled"
+              theme={{ roundness: 8 }}
+            >
+              <Menu.Item
+                onPress={() => {
+                  closeMenu();
+                  router.push("/about");
+                }}
+                titleStyle={{ fontWeight: "600" }}
+                title="About"
               />
-            </TouchableOpacity>
-          }
-          style={{
-            backgroundColor: Color.primaryBackgroundColor,
-          }}
-          anchorPosition="top"
-          mode="elevated"
-          contentStyle={{ width: 200, padding: 0 }}
-          elevation={5}
-          keyboardShouldPersistTaps="handled"
-          theme={{
-            roundness: 8,
-          }}
-        >
-          <Menu.Item
-            onPress={() => {
-              closeMenu();
-              router.push("/about");
-            }}
-            titleStyle={{
-              fontWeight: "600",
-            }}
-            title="About"
-          />
-        </Menu>
-      </Appbar.Header>
+            </Menu>
+          </>
+        }
+      />
 
       {/* content */}
       <View

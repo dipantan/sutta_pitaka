@@ -1,29 +1,33 @@
 import { Color } from "@/constants/color";
 import { loadPitakas } from "@/utils/offlineQueries";
 import { hp, wp } from "@/utils/responsive";
-import { MaterialCommunityIcons, Octicons } from "@expo/vector-icons";
+import { Octicons } from "@expo/vector-icons";
 import { useQuery } from "@tanstack/react-query";
-import { Link, router } from "expo-router";
+import { router } from "expo-router";
 import { MotiView } from "moti";
 import React from "react";
 import { ActivityIndicator, StatusBar, StyleSheet, View } from "react-native";
-import { ScrollView } from "react-native-gesture-handler";
-import { Avatar, Button, Card, Text } from "react-native-paper";
+import { Card, Text, useTheme } from "react-native-paper";
 
 const App = () => {
+  const { colors } = useTheme();
   const { data: pitakas, isLoading, error } = useQuery({
-    queryKey: ["pitakas"],
+    queryKey: ["pitakas", "v2"],
     queryFn: loadPitakas,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnReconnect: "always",
   });
 
   const headerMarginTop = (StatusBar.currentHeight ?? 0) + hp(2);
 
   return (
-    <ScrollView
+    <View
       style={{
         flex: 1,
+        backgroundColor: Color.primaryBackgroundColor,
       }}
-      showsVerticalScrollIndicator={false}
+      // showsVerticalScrollIndicator={false}
     >
       <MotiView
         animate={{
@@ -51,7 +55,7 @@ const App = () => {
 
       <View
         style={{
-          marginTop: wp(4),
+          // marginTop: wp(4),
           alignItems: "center",
         }}
       >
@@ -71,7 +75,7 @@ const App = () => {
             fontWeight: "bold",
           }}
         >
-          Sutta Pitaka
+          Tripitaka
         </Text>
 
         <Text
@@ -86,7 +90,7 @@ const App = () => {
           modern interface. Explore ancient wisdom for contemporary life.
         </Text>
 
-        <Button
+        {/* <Button
           buttonColor={Color.primaryColor}
           textColor={Color.invertedTextColor}
           style={{
@@ -96,15 +100,63 @@ const App = () => {
           }}
           onPress={() => {
             if (pitakas && pitakas.length) {
-              router.push({ pathname: "/suttaMenu", params: { pitaka: pitakas[0].pitaka } });
+              const targetUid = pitakas[0].uid || pitakas[0].pitaka;
+              router.push({ pathname: "/menu/[uid]", params: { uid: targetUid } });
             }
           }}
           disabled={!pitakas?.length}
         >
           Explore Suttas
-        </Button>
+        </Button> */}
 
-        <Link href={"/about"} asChild>
+
+
+        <View style={styles.sectionContainer}>
+          {isLoading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={Color.primaryColor} />
+              <Text style={{ marginTop: 12 }}>Loading collections…</Text>
+            </View>
+          ) : error ? (
+            <View style={styles.loadingContainer}>
+              <Text style={{ color: Color.primaryColor }}>
+                {(error as Error).message || "Unable to load pitakas"}
+              </Text>
+            </View>
+          ) : (
+            (pitakas || []).filter((p) => ['sutta', 'vinaya', 'abhidhamma'].includes(p.pitaka)).map((item) => (
+              <Card
+                key={item.uid}
+                style={[styles.pitakaCard, { backgroundColor: colors.elevation.level2 }]}
+                contentStyle={styles.pitakaCardContent}
+                onPress={() => {
+                  const targetUid = item.uid || item.pitaka;
+                  router.push({ pathname: "/menu/[uid]", params: { uid: targetUid } });
+                }}
+              >
+                <Text variant="titleMedium" style={{ fontWeight: "700", color: colors.onSurface }}>
+                  {item.translated_name || item.root_name}
+                </Text>
+                <Text variant="labelSmall" style={{ textTransform: "uppercase", letterSpacing: 1, color: colors.onSurfaceVariant }}>
+                  {item.pitaka === 'sutta' ? 'SUTTAPIṬAKA' : item.pitaka === 'vinaya' ? 'VINAYAPIṬAKA' : item.pitaka === 'abhidhamma' ? 'ABHIDHAMMAPIṬAKA' : ''}
+                </Text>
+                <Text
+                  variant="bodyMedium"
+                  style={{ textAlign: "center", color: colors.onSurface }}
+                >
+                  {item.blurb || "Tap to explore this collection offline."}
+                </Text>
+                {item.yellow_brick_road_count ? (
+                  <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>
+                    {item.yellow_brick_road_count} curated discourses
+                  </Text>
+                ) : null}
+              </Card>
+            ))
+          )}
+        </View>
+
+        {/* <Link href={"/about"} asChild>
           <Button
             icon={"heart-outline"}
             style={{
@@ -127,139 +179,9 @@ const App = () => {
               About & Credits
             </Text>
           </Button>
-        </Link>
-
-        <View style={styles.sectionContainer}>
-          {isLoading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color={Color.primaryColor} />
-              <Text style={{ marginTop: 12 }}>Loading collections…</Text>
-            </View>
-          ) : error ? (
-            <View style={styles.loadingContainer}>
-              <Text style={{ color: Color.primaryColor }}>
-                {(error as Error).message || "Unable to load pitakas"}
-              </Text>
-            </View>
-          ) : (
-            pitakas?.map((item) => (
-              <Card
-                key={item.uid}
-                style={styles.pitakaCard}
-                contentStyle={styles.pitakaCardContent}
-                onPress={() =>
-                  router.push({
-                    pathname: "/suttaMenu",
-                    params: { pitaka: item.pitaka },
-                  })
-                }
-              >
-                <Avatar.Icon
-                  size={wp(10)}
-                  style={styles.pitakaIcon}
-                  icon={() => (
-                    <MaterialCommunityIcons
-                      name="library"
-                      size={wp(5)}
-                      color={Color.invertedTextColor}
-                    />
-                  )}
-                />
-                <Text variant="titleMedium" style={{ fontWeight: "700" }}>
-                  {item.translated_name || item.root_name}
-                </Text>
-                <Text
-                  variant="bodyMedium"
-                  style={{ textAlign: "center" }}
-                  numberOfLines={3}
-                >
-                  {item.blurb || "Tap to explore this collection offline."}
-                </Text>
-                {item.yellow_brick_road_count ? (
-                  <Text variant="labelSmall" style={{ color: Color.iconColor }}>
-                    {item.yellow_brick_road_count} curated discourses
-                  </Text>
-                ) : null}
-              </Card>
-            ))
-          )}
-
-          {/* mindful design */}
-          <Card
-            style={{
-              backgroundColor: Color.secondaryBackgroundColor,
-              width: wp(90),
-            }}
-            contentStyle={{
-              padding: 8,
-              alignItems: "center",
-              gap: wp(3),
-              paddingVertical: wp(3),
-            }}
-          >
-            <Avatar.Icon
-              size={wp(10)}
-              style={{
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: Color.secondaryAccentColor,
-              }}
-              icon={() => (
-                <Octicons
-                  name="heart"
-                  size={wp(5)}
-                  color={Color.invertedTextColor}
-                />
-              )}
-            />
-            <Text variant="bodyLarge" style={{ fontWeight: "700" }}>
-              Mindful Design
-            </Text>
-            <Text variant="bodyMedium" style={{ textAlign: "center" }}>
-              Crafted with intention to support peaceful reading and
-              contemplation.
-            </Text>
-          </Card>
-
-          {/* open source */}
-          <Card
-            style={{
-              backgroundColor: Color.secondaryBackgroundColor,
-              width: wp(90),
-            }}
-            contentStyle={{
-              padding: 8,
-              alignItems: "center",
-              gap: wp(3),
-              paddingVertical: wp(3),
-            }}
-          >
-            <Avatar.Icon
-              size={wp(10)}
-              style={{
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: Color.primaryAccentColor,
-              }}
-              icon={() => (
-                <MaterialCommunityIcons
-                  name="open-source-initiative"
-                  size={wp(7)}
-                  color={Color.invertedTextColor}
-                />
-              )}
-            />
-            <Text variant="bodyLarge" style={{ fontWeight: "700" }}>
-              Open Source
-            </Text>
-            <Text variant="bodyMedium" style={{ textAlign: "center" }}>
-              Built with gratitude upon the generous API provided by
-              SuttaCentral.net.
-            </Text>
-          </Card>
-        </View>
+        </Link> */}
       </View>
-    </ScrollView>
+    </View>
   );
 };
 

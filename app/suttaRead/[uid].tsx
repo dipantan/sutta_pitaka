@@ -4,14 +4,9 @@ import { loadSuttaContent, SuttaSegment } from "@/utils/offlineQueries";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import React, { useMemo } from "react";
-import {
-    ActivityIndicator,
-    Platform,
-    StatusBar,
-    StyleSheet,
-    View,
-} from "react-native";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 import { Appbar, Text } from "react-native-paper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { WebView } from "react-native-webview";
 
 const SuttaReader = () => {
@@ -23,6 +18,8 @@ const SuttaReader = () => {
       author?: string;
       author_short?: string;
     }>();
+
+  const insets = useSafeAreaInsets();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["suttaContent", uid, author_uid, lang],
@@ -93,12 +90,10 @@ const SuttaReader = () => {
   }
 
   return (
-    <View style={{ flex: 1 }}>
-      <Appbar.Header
-        statusBarHeight={Platform.OS === "ios" ? 5 : StatusBar.currentHeight}
-      >
-        <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content title={`${author || author_short || data?.translation?.author || "Unknown"}`} />
+    <View style={{ flex: 1, backgroundColor: Color.primaryBackgroundColor }}>
+      <Appbar.Header statusBarHeight={insets.top} style={{ backgroundColor: Color.primaryColorLight }}>
+        <Appbar.BackAction onPress={() => router.back()} color={Color.onPrimaryPrimaryTextColor} />
+        <Appbar.Content title={`${author || author_short || data?.translation?.author || "Unknown"}`} color={Color.onPrimaryPrimaryTextColor} />
       </Appbar.Header>
 
       <WebView

@@ -19,6 +19,7 @@ export default function RootLayout() {
       <PaperProvider theme={Theme}>
         <GestureHandlerRootView style={{ flex: 1 }}>
           <SafeAreaView
+            edges={["left","right","bottom"]}
             style={{ flex: 1, backgroundColor: Color.primaryColorLight }}
           >
             <StatusBar backgroundColor={Color.primaryColorLight} style="auto" />

@@ -114,6 +114,7 @@ export default function RootLayout() {
           <GestureHandlerRootView style={{ flex: 1 }}>
             <DatasetBootstrap>
               <SafeAreaView
+                edges={["left","right","bottom"]}
                 style={{ flex: 1, backgroundColor: paperTheme.colors.primaryContainer }}
               >
                 <StatusBar

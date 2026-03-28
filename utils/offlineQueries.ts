@@ -94,6 +94,44 @@ export async function loadLanguages() {
   }));
 }
 
+export async function loadMenuNode(uid: string): Promise<MenuNode | null> {
+  const db = await getDatabase();
+  const node = await db.getFirstAsync<MenuRecord>(
+    `SELECT * FROM menus WHERE uid = ? LIMIT 1`,
+    [uid]
+  );
+
+  if (!node) return null;
+
+  const children = (await db.getAllAsync<MenuRecord>(
+    `SELECT * FROM menus WHERE parent_uid = ? ORDER BY order_index`,
+    [uid]
+  )) as MenuRecord[];
+
+  return { ...node, children } as MenuNode;
+}
+
+export async function loadSuttaplex(suttaUid: string): Promise<{
+  translations: Translation[];
+  sutta: SuttaRecord | null;
+}> {
+  const db = await getDatabase();
+
+  const translations = (await db.getAllAsync<TranslationRow>(
+    `SELECT * FROM translations WHERE sutta_uid = ? ORDER BY is_root DESC, lang ASC`,
+    [suttaUid]
+  )) as TranslationRow[];
+
+  const mapped: Translation[] = translations.map(mapTranslationRow);
+
+  const sutta = await db.getFirstAsync<SuttaRecord>(
+    `SELECT uid, title, translated_title, blurb, root_lang, root_lang_name FROM suttas WHERE uid = ? LIMIT 1`,
+    [suttaUid]
+  );
+
+  return { translations: mapped, sutta: sutta ?? null };
+}
+
 function sanitizeFtsQuery(query: string) {
   return query
     .trim()
@@ -353,10 +391,31 @@ type PitakaSummary = {
 export async function loadPitakas(): Promise<PitakaSummary[]> {
   const db = await getDatabase();
   const rows = (await db.getAllAsync<PitakaSummary>(
-    `SELECT DISTINCT pitaka, uid, root_name, translated_name, blurb, yellow_brick_road_count
-     FROM menus
-     WHERE parent_uid IS NULL OR parent_uid = ''
-     ORDER BY order_index`
+    `
+    SELECT * FROM (
+      SELECT uid, pitaka, root_name, translated_name, blurb, yellow_brick_road_count
+      FROM menus
+      WHERE (parent_uid IS NULL OR parent_uid = '') AND pitaka = 'sutta'
+      ORDER BY order_index
+      LIMIT 1
+    )
+    UNION ALL
+    SELECT * FROM (
+      SELECT uid, pitaka, root_name, translated_name, blurb, yellow_brick_road_count
+      FROM menus
+      WHERE (parent_uid IS NULL OR parent_uid = '') AND pitaka = 'vinaya'
+      ORDER BY order_index
+      LIMIT 1
+    )
+    UNION ALL
+    SELECT * FROM (
+      SELECT uid, pitaka, root_name, translated_name, blurb, yellow_brick_road_count
+      FROM menus
+      WHERE (parent_uid IS NULL OR parent_uid = '') AND pitaka = 'abhidhamma'
+      ORDER BY order_index
+      LIMIT 1
+    )
+    `
   )) as PitakaSummary[];
 
   return rows;

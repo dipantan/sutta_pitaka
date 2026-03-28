@@ -26,11 +26,11 @@ const MenuCard = ({
 }: TMenuCard) => {
   const { colors } = useTheme();
   const currentLanguage = useLanguageStore((state) => state.currentLanguage);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(true);
 
   return (
     <Card
-      style={[styles.card, { backgroundColor: colors.background }]}
+      style={[styles.card, { backgroundColor: colors.elevation.level2 }]}
       onPress={onPress}
     >
       <Card.Content style={styles.content}>
@@ -39,7 +39,7 @@ const MenuCard = ({
             variant="bodyLarge"
             style={[
               {
-                color: Color.onPrimaryPrimaryTextColor,
+                color: colors.onSurface,
                 fontWeight: "700",
                 textTransform: "capitalize",
                 marginTop: 12,
@@ -83,7 +83,7 @@ const MenuCard = ({
 
             {headerSubtitle && (
               <Text
-                style={[{ color: Color.onPrimarySecondaryTextColor }]}
+                style={[{ color: colors.onSurfaceVariant }]}
                 variant="labelSmall"
               >
                 {headerSubtitle?.toUpperCase()}
@@ -107,12 +107,11 @@ const MenuCard = ({
           <Text
             style={[
               {
-                color: Color.onPrimaryPrimaryTextColor,
+                color: colors.onSurface,
                 fontSize: wp(3.5),
               },
             ]}
-            numberOfLines={isExpanded ? undefined : 2}
-            onPress={() => setIsExpanded(!isExpanded)}
+            numberOfLines={undefined}
           >
             {htmlToText(description)}
           </Text>
