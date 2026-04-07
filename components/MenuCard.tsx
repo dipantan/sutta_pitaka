@@ -2,7 +2,6 @@ import { Color } from "@/constants/color";
 import useLanguageStore from "@/stores/useLanguage";
 import { TMenuCard } from "@/types";
 import { Translation } from "@/types/suttaplex";
-import { htmlToText } from "@/utils";
 import { wp } from "@/utils/responsive";
 import { Entypo, MaterialIcons } from "@expo/vector-icons";
 import React, { useState } from "react";
@@ -24,98 +23,134 @@ const MenuCard = ({
   onAuthorPress,
   onLongPress,
 }: TMenuCard) => {
-  const { colors } = useTheme();
+  const { colors, dark } = useTheme();
   const currentLanguage = useLanguageStore((state) => state.currentLanguage);
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const descriptionText = description
+    ? String(description)
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+    : "";
+  const descriptionColor = dark ? colors.onSurface : "#201b13";
+  const cardBorderColor = dark ? colors.outlineVariant : "rgba(125, 95, 45, 0.08)";
 
   return (
     <Card
-      style={[styles.card, { backgroundColor: colors.elevation.level2 }]}
+      style={[styles.card, { backgroundColor: colors.surface, borderColor: cardBorderColor }]}
       onPress={onPress}
     >
-      <Card.Content style={styles.content}>
+      <Card.Content style={[styles.content, yellowBrickRoad ? styles.contentWithTopBadge : null]}>
         {headerTitle && (
           <Text
-            variant="bodyLarge"
+            variant="titleLarge"
             style={[
+              styles.headerTitle,
               {
                 color: colors.onSurface,
-                fontWeight: "700",
-                textTransform: "capitalize",
-                marginTop: 12,
               },
             ]}
             numberOfLines={2}
           >
-            {headerTitle?.toUpperCase()}
+            {headerTitle}
           </Text>
         )}
 
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            alignItems: "center",
-          }}
-        >
+        <View style={styles.metaRow}>
           <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              gap: 8,
-            }}
+            style={styles.metaLeft}
           >
             {leftText && (
-              <Text
+              <View
                 style={[
+                  styles.languageChip,
                   {
-                    color: Color.onPrimarySecondaryTextColor,
                     backgroundColor: Color.darkFixedBackgroundColor,
-                    paddingHorizontal: 4,
-                    borderRadius: 4,
                   },
                 ]}
-                variant="labelSmall"
               >
-                {leftText?.toUpperCase()}
-              </Text>
+                <RNText
+                  numberOfLines={1}
+                  style={{
+                    color: Color.onPrimarySecondaryTextColor,
+                    fontSize: 10,
+                    lineHeight: 12,
+                    fontWeight: "700",
+                    letterSpacing: 0.4,
+                    includeFontPadding: false,
+                    textAlignVertical: "center",
+                  }}
+                >
+                  {leftText?.toUpperCase()}
+                </RNText>
+              </View>
             )}
 
             {headerSubtitle && (
               <Text
-                style={[{ color: colors.onSurfaceVariant }]}
-                variant="labelSmall"
+                style={[
+                  styles.headerSubtitle,
+                  { color: colors.onSurfaceVariant },
+                ]}
+                variant="titleSmall"
               >
-                {headerSubtitle?.toUpperCase()}
+                {headerSubtitle}
               </Text>
             )}
 
             {child_range && (
               <Text
-                style={[{ color: Color.onPrimarySecondaryTextColor }]}
-                variant="labelSmall"
+                style={[
+                  styles.childRange,
+                  { color: colors.onSurfaceVariant },
+                ]}
+                variant="titleSmall"
               >
                 {child_range}
               </Text>
             )}
           </View>
 
-          {rightText && <Text style={styles.rightText}>{rightText}</Text>}
+          {rightText && (
+            <View style={[styles.metaBadge, { backgroundColor: colors.primaryContainer }]}> 
+              <Text style={[styles.rightText, { color: colors.onPrimaryContainer }]}>
+                {rightText}
+              </Text>
+            </View>
+          )}
         </View>
 
-        {description && (
-          <Text
-            style={[
-              {
-                color: colors.onSurface,
-                fontSize: wp(3.5),
-              },
-            ]}
-            numberOfLines={undefined}
+        {descriptionText ? (
+          <Pressable
+            style={styles.descriptionContainer}
+            onPress={() => setIsExpanded((value) => !value)}
           >
-            {htmlToText(description)}
-          </Text>
-        )}
+            <View style={styles.descriptionHeaderRow}>
+              <Text
+                style={[styles.descriptionHint, { color: colors.onSurfaceVariant }]}
+                variant="labelSmall"
+              >
+                {isExpanded ? "Show less" : "Show more"}
+              </Text>
+              <Entypo
+                name={isExpanded ? "chevron-small-up" : "chevron-small-down"}
+                size={18}
+                color={colors.onSurfaceVariant}
+              />
+            </View>
+            <Text
+              style={[
+                styles.description,
+                {
+                  color: descriptionColor,
+                },
+              ]}
+              numberOfLines={isExpanded ? undefined : 3}
+            >
+              {descriptionText}
+            </Text>
+          </Pressable>
+        ) : null}
 
         {translations && translations?.length > 0 && (
           <View>
@@ -282,18 +317,12 @@ const MenuCard = ({
 
         {yellowBrickRoad && (
           <View
-            style={{
-              position: "absolute",
-              top: 0,
-              right: 0,
-              borderTopRightRadius: 16,
-              borderBottomLeftRadius: 8,
-              backgroundColor: colors.primaryContainer,
-              paddingHorizontal: 8,
-              paddingVertical: 2,
-            }}
+            style={[
+              styles.topRightBadge,
+              { backgroundColor: colors.primaryContainer },
+            ]}
           >
-            <Text variant="labelSmall">
+            <Text variant="labelSmall" style={{ color: colors.onPrimaryContainer, fontWeight: "700" }}>
               {yellowBrickRoadCount}{" "}
               {currentLanguage?.name || currentLanguage?.iso_code}
             </Text>
@@ -308,38 +337,103 @@ export default MenuCard;
 
 const styles = StyleSheet.create({
   card: {
-    marginVertical: 8,
-    marginHorizontal: 8,
+    borderRadius: 22,
+    overflow: "hidden",
+    borderWidth: 1,
+    elevation: 2,
   },
   content: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
     gap: 8,
   },
-  title: {
-    fontSize: 16,
-    fontWeight: "bold",
-    lineHeight: 20,
+  contentWithTopBadge: {
+    paddingTop: 20,
   },
-  subtitleContainer: {
+  headerTitle: {
+    fontWeight: "700",
+    fontSize: wp(4),
+    lineHeight: 24,
+    marginTop: 2,
+    letterSpacing: -0.2,
+  },
+  metaRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 4,
+    alignItems: "flex-start",
+    gap: 8,
+    paddingRight: 56,
   },
-  subtitle: {
+  metaLeft: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    flex: 1,
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  languageChip: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    overflow: "hidden",
+    alignSelf: "flex-start",
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  headerSubtitle: {
+    fontWeight: "700",
     fontSize: 14,
     lineHeight: 18,
+    letterSpacing: 0.2,
+    flexShrink: 1,
   },
-  rightButton: {
-    backgroundColor: Color.primaryColorLight, // Yellow background for "39 English"
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
+  childRange: {
+    fontSize: 14,
+    lineHeight: 18,
+    opacity: 0.9,
   },
   rightText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "600",
+    flexShrink: 0,
+  },
+  metaBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    alignSelf: "flex-start",
+  },
+  descriptionContainer: {
+    gap: 4,
+  },
+  descriptionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "flex-end",
+    gap: 2,
+  },
+  descriptionHint: {
+    fontSize: 10,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  description: {
+    fontSize: wp(3.6),
+    lineHeight: 24,
+    // marginTop: 2,
+  },
+  topRightBadge: {
+    position: "absolute",
+    top: 0,
+    right: 0,
+    borderTopRightRadius: 22,
+    borderBottomLeftRadius: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    minWidth: 74,
+    alignItems: "center",
   },
   helperIndicatorContainer: {
     flexDirection: "row",

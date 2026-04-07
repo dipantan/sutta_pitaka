@@ -1,5 +1,6 @@
 import * as FileSystem from "expo-file-system/legacy";
 import * as SQLite from "expo-sqlite";
+import { DatabaseDecompressor } from "./DatabaseDecompressor";
 
 const DB_NAME = "suttacentral.db";
 const METADATA_FILENAME = "metadata.json";
@@ -34,7 +35,7 @@ function resolvePaths(): DatasetPaths {
   return resolvedPaths;
 }
 
-const DB_ASSET = require("../assets/databases/suttacentral.db");
+// Load metadata from bundled asset
 const BUNDLED_METADATA: DatasetMetadata = require("../assets/datasets/metadata.json");
 
 export type DatasetMetadata = {
@@ -74,27 +75,6 @@ async function writeLocalMetadata(metadata: DatasetMetadata) {
   );
 }
 
-async function copyAssetToFile(assetModule: any, destination: string) {
-  try {
-    console.log("[dataset] Resolving asset for", destination);
-    
-    // Use direct bundled asset path to avoid expo-asset compatibility issues
-    const assetPath = (assetModule as any).default || assetModule;
-    
-    if (typeof assetPath === 'string') {
-      // Direct bundled asset path
-      await FileSystem.copyAsync({ from: assetPath, to: destination });
-      console.log("[dataset] Asset copied from bundled path to", destination);
-      return;
-    }
-    
-    throw new Error("Unable to resolve bundled asset path");
-  } catch (error) {
-    console.error("[dataset] copyAssetToFile failed", error);
-    throw error;
-  }
-}
-
 async function copyDatabaseIfNeeded() {
   const { SQLITE_DIR, DB_DEST_PATH } = resolvePaths();
   await ensureDirExists(SQLITE_DIR);
@@ -108,19 +88,21 @@ async function copyDatabaseIfNeeded() {
 
   if (shouldReplace) {
     console.log(
-      "[dataset] Copying bundled DB →",
-      DB_DEST_PATH,
+      "[dataset] Database needs update, using DatabaseDecompressor",
       "(existing metadata:",
       storedMetadata?.dataset_commit,
       ")"
     );
-    await FileSystem.deleteAsync(DB_DEST_PATH, { idempotent: true });
-    console.log("[dataset] Copying asset to", DB_DEST_PATH);
-    await copyAssetToFile(DB_ASSET, DB_DEST_PATH);
+    
+    // Use the new DatabaseDecompressor system
+    await DatabaseDecompressor.initializeDatabase();
+    
+    // Write metadata after successful decompression
     await writeLocalMetadata(BUNDLED_METADATA);
-    console.log("[dataset] DB copy complete");
+    
+    console.log("[dataset] Database setup complete");
   } else {
-    console.log("[dataset] Existing DB up-to-date, skipping copy");
+    console.log("[dataset] Existing DB up-to-date, skipping setup");
   }
 }
 
@@ -149,6 +131,7 @@ export async function ensureDatasetReady() {
 export async function getDatabase() {
   if (!dbInstance) {
     await ensureDatasetReady();
+    // Database is now managed by DatabaseDecompressor, use the standard path
     dbInstance = SQLite.openDatabaseSync(DB_NAME);
   }
   return dbInstance;

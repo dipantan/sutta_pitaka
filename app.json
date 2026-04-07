@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "suttas",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "description": "A digital collection of the Sutta Pitaka, part of the Pali Canon of Theravada Buddhism.",
     "githubUrl": "https://github.com/dipantan/sutta_pitaka",
     "platforms": [
@@ -36,6 +36,14 @@
       "expo-web-browser",
       "expo-font",
       [
+        "expo-asset",
+        {
+          "assets": [
+            "assets/databases/suttacentral_db_gz"
+          ]
+        }
+      ],
+      [
         "react-native-bootsplash",
         {
           "assetsDir": "assets/bootsplash",
@@ -51,8 +59,7 @@
           "enableFTS": true,
           "useSQLCipher": false
         }
-      ],
-      "expo-asset"
+      ]
     ],
     "experiments": {
       "typedRoutes": true

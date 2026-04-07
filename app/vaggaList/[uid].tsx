@@ -5,7 +5,7 @@ import useLanguageStore from "@/stores/useLanguage";
 import useTab from "@/stores/useTab";
 import Styles from "@/styles";
 import { ReaderScreenProps } from "@/types";
-import { loadMenuChildrenDetails } from "@/utils/offlineQueries";
+import { loadMenuChildrenDetails, MenuChildDetail } from "@/utils/offlineQueries";
 import { useQuery } from "@tanstack/react-query";
 import { router, useLocalSearchParams } from "expo-router";
 import React from "react";
@@ -27,6 +27,30 @@ const VaggaList = () => {
     queryFn: () => loadMenuChildrenDetails(uid as string),
     enabled: !!uid,
   });
+
+  const getHeaderSubtitle = (item: MenuChildDetail) => {
+    if (item.root_name && item.root_name !== item.translated_name && item.root_name !== item.child_range) {
+      return item.root_name;
+    }
+
+    if (item.acronym && item.acronym !== item.child_range) {
+      return item.acronym;
+    }
+
+    return undefined;
+  };
+
+  const getChildRange = (item: MenuChildDetail) => {
+    if (item.child_range) {
+      return item.child_range;
+    }
+
+    if (item.acronym && item.acronym !== item.root_name) {
+      return item.acronym;
+    }
+
+    return undefined;
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: Color.primaryBackgroundColor }}>
@@ -79,12 +103,12 @@ const VaggaList = () => {
                   : item.sutta?.translated_title || item.translated_name || item.root_name || undefined
               }
               translations={item.translations}
-              headerSubtitle={item.root_name ?? undefined}
+              headerSubtitle={getHeaderSubtitle(item)}
               description={item.blurb ?? undefined}
               yellowBrickRoadCount={item.yellow_brick_road_count ?? undefined}
               yellowBrickRoad={item.yellow_brick_road ? true : undefined}
               leftText={item.root_lang_iso ?? undefined}
-              child_range={item.child_range ?? undefined}
+              child_range={getChildRange(item)}
               onPress={() => {
                 if (item.node_type === "branch") {
                   router.push({

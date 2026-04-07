@@ -16,7 +16,8 @@
     "build:android": "eas build -p android --profile preview",
     "build:local-apk": "cd android && ./gradlew assembleRelease && cd .. && mv android/app/build/outputs/apk/release/app-*-release.apk ./",
     "create:github-release": "node -e \"const fs = require('fs'); const notes = fs.existsSync('changelog.md') ? fs.readFileSync('changelog.md', 'utf8').trim() : ''; if (!notes) { console.error('Error: changelog.md is missing or empty'); process.exit(1); } process.exit(0);\" && [ -z \"$TAG\" ] && { echo 'Error: Tag name is required. Use --tag=<tag-name>'; exit 1; } || gh release create \"$TAG\" --notes-file changelog.md ./app-*-release.apk",
-    "build-and-release": "npm run build:local-apk && npm run create:github-release --tag=\"$TAG\""
+    "build-and-release": "npm run build:local-apk && npm run create:github-release --tag=\"$TAG\"",
+    "prepare:dataset": "node ./scripts/prepareDataset.js"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.2",
@@ -26,7 +27,7 @@
     "@tanstack/react-query-persist-client": "^5.83.0",
     "axios": "^1.9.0",
     "expo": "~54.0.0",
-    "expo-asset": "~12.0.12",
+    "expo-asset": "^55.0.13",
     "expo-constants": "~18.0.13",
     "expo-dev-client": "~6.0.20",
     "expo-file-system": "~19.0.21",
@@ -39,6 +40,7 @@
     "expo-system-ui": "~6.0.9",
     "expo-updates": "~29.0.16",
     "expo-web-browser": "~15.0.10",
+    "fzstd": "^0.1.1",
     "html-react-parser": "^5.2.5",
     "moti": "^0.30.0",
     "react": "19.1.0",
@@ -57,6 +59,9 @@
     "react-native-web": "^0.21.0",
     "react-native-webview": "13.15.0",
     "react-native-worklets": "0.5.1",
+    "simple-zstd": "^2.1.0",
+    "zstd-codec": "^0.1.5",
+    "zstddec": "^0.2.0",
     "zustand": "^5.0.5"
   },
   "devDependencies": {

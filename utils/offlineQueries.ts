@@ -36,15 +36,20 @@ type TranslationRow = {
   lang_name: string | null;
   author_uid: string;
   author: string | null;
+  author_short: string | null;
   segmented: number;
   has_comment: number;
   is_root: number;
   localized: number;
   localized_percent: number | null;
+  title: string | null;
+  volpage: string | null;
+  publication_date: string | null;
 };
 
 type SuttaRecord = {
   uid: string;
+  acronym?: string | null;
   title: string | null;
   translated_title: string | null;
   blurb: string | null;
@@ -58,10 +63,23 @@ type SegmentRow = {
   segment_order: number;
 };
 
+type CommentRow = {
+  segment_id: string;
+  content: string;
+};
+
+type LegacyHtmlRow = {
+  content: string;
+  author: string | null;
+  author_uid: string;
+  lang: string | null;
+};
+
 export type SuttaSegment = {
   segment_id: string;
   translation: string;
   root?: string;
+  comment?: string;
   title?: string | null;
   order: number;
 };
@@ -70,6 +88,8 @@ export type SuttaContent = {
   segments: SuttaSegment[];
   translation: Translation | null;
   sutta: SuttaRecord | null;
+  isLegacy?: boolean;
+  legacyHtml?: string | null;
 };
 
 type SearchResultRecord = SuttaRecord & { acronym: string | null };
@@ -77,6 +97,19 @@ type SearchResultRecord = SuttaRecord & { acronym: string | null };
 export type SearchResult = SearchResultRecord & {
   translations: Translation[];
 };
+
+function dedupeMenuRecords<T extends MenuRecord>(rows: T[]): T[] {
+  const seen = new Set<string>();
+
+  return rows.filter((row) => {
+    if (seen.has(row.uid)) {
+      return false;
+    }
+
+    seen.add(row.uid);
+    return true;
+  });
+}
 
 export async function loadLanguages() {
   const db = await getDatabase();
@@ -103,10 +136,12 @@ export async function loadMenuNode(uid: string): Promise<MenuNode | null> {
 
   if (!node) return null;
 
-  const children = (await db.getAllAsync<MenuRecord>(
-    `SELECT * FROM menus WHERE parent_uid = ? ORDER BY order_index`,
-    [uid]
-  )) as MenuRecord[];
+  const children = dedupeMenuRecords(
+    (await db.getAllAsync<MenuRecord>(
+      `SELECT * FROM menus WHERE parent_uid = ? ORDER BY order_index`,
+      [uid]
+    )) as MenuRecord[]
+  );
 
   return { ...node, children } as MenuNode;
 }
@@ -236,14 +271,14 @@ function mapTranslationRow(row: TranslationRow): Translation {
     is_root: row.is_root === 1,
     author: row.author || "Unknown",
     author_short:
-      row.author?.split(" ").slice(-1).join(" ") || row.author || "Unknown",
+      row.author_short || row.author?.split(" ").slice(-1).join(" ") || row.author || "Unknown",
     author_uid: row.author_uid,
     id: `${row.sutta_uid}-${row.author_uid}-${row.lang}`,
     segmented: row.segmented === 1,
-    title: undefined,
-    volpage: null,
+    title: row.title || undefined,
+    volpage: row.volpage ?? null,
     has_comment: row.has_comment === 1,
-    publication_date: undefined,
+    publication_date: row.publication_date || undefined,
   };
 }
 
@@ -264,8 +299,20 @@ export async function loadSuttaContent(
     [suttaUid]
   )) as SegmentRow[];
 
+  let commentRows: CommentRow[] = [];
+  try {
+    commentRows = (await db.getAllAsync<CommentRow>(
+      `SELECT segment_id, content FROM comments WHERE sutta_uid = ? AND author_uid = ? AND lang = ? ORDER BY segment_id`,
+      [suttaUid, authorUid, lang]
+    )) as CommentRow[];
+  } catch (error) {
+    console.warn("Comments table unavailable in current dataset", error);
+  }
+
   const rootMap = new Map<string, SegmentRow>();
   rootRows.forEach((row) => rootMap.set(row.segment_id, row));
+  const commentMap = new Map<string, string>();
+  commentRows.forEach((row) => commentMap.set(row.segment_id, row.content));
 
   const translationMetaRow = await db.getFirstAsync<TranslationRow>(
     `SELECT * FROM translations WHERE sutta_uid = ? AND author_uid = ? AND lang = ? LIMIT 1`,
@@ -278,10 +325,27 @@ export async function loadSuttaContent(
     [suttaUid]
   );
 
+  let legacyRow: LegacyHtmlRow | null = null;
+  if (!translationRows.length) {
+    try {
+      legacyRow =
+        (await db.getFirstAsync<LegacyHtmlRow>(
+          `SELECT content, author, author_uid, lang
+           FROM legacy_html
+           WHERE sutta_uid = ? AND author_uid = ? AND (lang = ? OR ? = '')
+           LIMIT 1`,
+          [suttaUid, authorUid, lang, lang]
+        )) ?? null;
+    } catch (error) {
+      console.warn("Legacy HTML table unavailable in current dataset", error);
+    }
+  }
+
   const segments: SuttaSegment[] = translationRows.map((row) => ({
     segment_id: row.segment_id,
     translation: row.content,
     root: rootMap.get(row.segment_id)?.content,
+    comment: commentMap.get(row.segment_id),
     order: row.segment_order,
     title: null,
   }));
@@ -290,6 +354,8 @@ export async function loadSuttaContent(
     segments,
     translation,
     sutta: sutta ?? null,
+    isLegacy: !!legacyRow,
+    legacyHtml: legacyRow?.content ?? null,
   };
 }
 
@@ -298,20 +364,70 @@ export type MenuChildDetail = MenuRecord & {
   sutta?: SuttaRecord | null;
 };
 
+type SuttaMenuFallbackRow = {
+  uid: string;
+  collection: string | null;
+  root_name: string | null;
+  translated_name: string | null;
+  blurb: string | null;
+  root_lang_iso: string | null;
+  root_lang_name: string | null;
+  acronym: string | null;
+};
+
 export async function loadMenuChildrenDetails(parentUid: string): Promise<MenuChildDetail[]> {
   const db = await getDatabase();
-  const children = (await db.getAllAsync<MenuRecord>(
-    `SELECT * FROM menus WHERE parent_uid = ? ORDER BY order_index`,
-    [parentUid]
-  )) as MenuRecord[];
+
+  let children = dedupeMenuRecords(
+    (await db.getAllAsync<MenuRecord>(
+      `SELECT * FROM menus WHERE parent_uid = ? ORDER BY order_index`,
+      [parentUid]
+    )) as MenuRecord[]
+  );
+
+  console.log("[menu] menu children query", parentUid, children.length);
 
   if (!children.length) {
+    const fallbackRows = (await db.getAllAsync<SuttaMenuFallbackRow>(
+      `SELECT uid, collection, title AS root_name, translated_title AS translated_name, blurb, root_lang AS root_lang_iso, root_lang_name, acronym
+       FROM suttas
+       WHERE collection = ?
+          OR (uid LIKE ? AND uid != ?)
+       ORDER BY uid`,
+      [parentUid, `${parentUid}%`, parentUid]
+    )) as SuttaMenuFallbackRow[];
+
+    console.log("[menu] sutta fallback query", parentUid, fallbackRows.length);
+
+    children = fallbackRows.map((row, index) => ({
+      pitaka: "",
+      collection: row.collection,
+      uid: row.uid,
+      parent_uid: parentUid,
+      root_name: row.root_name,
+      translated_name: row.translated_name,
+      acronym: row.acronym,
+      node_type: "leaf",
+      blurb: row.blurb,
+      child_range: null,
+      root_lang_iso: row.root_lang_iso,
+      root_lang_name: row.root_lang_name,
+      yellow_brick_road: null,
+      yellow_brick_road_count: null,
+      order_index: index,
+    }));
+  }
+
+  if (!children.length) {
+    console.log("[menu] no children found after fallback", parentUid);
     return [];
   }
 
-  const leafUids = children.filter((child) => child.node_type === "leaf").map((child) => child.uid);
-  let translationsMap = new Map<string, Translation[]>();
-  let suttaMap = new Map<string, SuttaRecord>();
+  const leafUids = children
+    .filter((child) => child.node_type === "leaf")
+    .map((child) => child.uid);
+  const translationsMap = new Map<string, Translation[]>();
+  const suttaMap = new Map<string, SuttaRecord>();
 
   if (leafUids.length) {
     const placeholders = leafUids.map(() => "?").join(",");
@@ -321,22 +437,7 @@ export async function loadMenuChildrenDetails(parentUid: string): Promise<MenuCh
     )) as TranslationRow[];
 
     translations.forEach((row) => {
-      const entry: Translation = {
-        lang: row.lang,
-        lang_name:
-          row.lang_name || row.lang?.toUpperCase() || row.lang || "Unknown",
-        is_root: row.is_root === 1,
-        author: row.author || "Unknown",
-        author_short:
-          row.author?.split(" ").slice(-1).join(" ") || row.author || "Unknown",
-        author_uid: row.author_uid,
-        id: `${row.sutta_uid}-${row.author_uid}-${row.lang}`,
-        segmented: row.segmented === 1,
-        title: undefined,
-        volpage: null,
-        has_comment: row.has_comment === 1,
-        publication_date: undefined,
-      };
+      const entry = mapTranslationRow(row);
       const existing = translationsMap.get(row.sutta_uid) ?? [];
       existing.push(entry);
       translationsMap.set(row.sutta_uid, existing);
@@ -349,6 +450,8 @@ export async function loadMenuChildrenDetails(parentUid: string): Promise<MenuCh
 
     suttas.forEach((sutta) => suttaMap.set(sutta.uid, sutta));
   }
+
+  console.log("[menu] returning children", parentUid, children.length, leafUids.length);
 
   return children.map((child) => ({
     ...child,
@@ -368,10 +471,12 @@ export async function loadMenuByPitaka(pitaka: string): Promise<MenuNode | null>
     return null;
   }
 
-  const children = (await db.getAllAsync<MenuRecord>(
-    `SELECT * FROM menus WHERE parent_uid = ? ORDER BY order_index`,
-    [root.uid]
-  )) as MenuRecord[];
+  const children = dedupeMenuRecords(
+    (await db.getAllAsync<MenuRecord>(
+      `SELECT * FROM menus WHERE parent_uid = ? ORDER BY order_index`,
+      [root.uid]
+    )) as MenuRecord[]
+  );
 
   return {
     ...root,
