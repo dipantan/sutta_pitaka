@@ -1,4 +1,3 @@
-import * as Asset from 'expo-asset';
 import * as ExpoConstants from 'expo-constants';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Platform } from 'react-native';
@@ -65,42 +64,17 @@ export class DatabaseDecompressor {
       const dirInfo = await FileSystem.getInfoAsync(documentDir);
       console.log('Document directory exists:', dirInfo.exists);
       
-      // Use expo-asset to load the gzip asset
-      try {
-        console.log('Loading asset using expo-asset...');
-        const asset = Asset.Asset.fromModule(`../assets/databases/${this.ASSET_NAME}`);
-        console.log(`Asset created: ${typeof asset}`);
-        
-        // Download the asset if needed
-        await asset.downloadAsync();
-        console.log(`Asset downloaded, localUri: ${asset.localUri}`);
-        
-        // Copy the asset to device storage
-        if (asset.localUri) {
-          await FileSystem.copyAsync({
-            from: asset.localUri,
-            to: destinationPath,
-          });
-          console.log(`Successfully copied ${assetName} using expo-asset`);
-        } else {
-          throw new Error('Asset localUri is undefined');
-        }
-      } catch (assetError) {
-        console.warn(`Failed to load ${assetName} via expo-asset:`, assetError);
-        
-        // Fallback to require() approach
-        console.log('Trying require() fallback...');
-        const assetModule = require(`../assets/databases/${this.ASSET_NAME}`);
-        console.log(`Asset loaded via require(), type: ${typeof assetModule}`);
-        
-        // Write the asset data to device storage
-        await FileSystem.writeAsStringAsync(destinationPath, assetModule, {
-          encoding: 'base64',
-        });
-        
-        console.log(`Successfully wrote ${assetName} from require() to device storage`);
-      }
+      // Use require() to load the asset
+      console.log('Loading asset using require()...');
+      const assetModule = require(`../assets/databases/${this.ASSET_NAME}`);
+      console.log(`Asset loaded via require(), type: ${typeof assetModule}`);
       
+      // Write the asset data to device storage
+      await FileSystem.writeAsStringAsync(destinationPath, assetModule, {
+        encoding: 'base64',
+      });
+      
+      console.log(`Successfully wrote ${assetName} from require() to device storage`);
       console.log(`Successfully processed ${assetName}`);
     } catch (error) {
       console.error(`Failed to copy ${assetName}:`, error);

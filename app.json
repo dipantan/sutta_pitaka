@@ -36,14 +36,6 @@
       "expo-web-browser",
       "expo-font",
       [
-        "expo-asset",
-        {
-          "assets": [
-            "assets/databases/suttacentral_db_gz"
-          ]
-        }
-      ],
-      [
         "react-native-bootsplash",
         {
           "assetsDir": "assets/bootsplash",
