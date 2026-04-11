@@ -1,6 +1,6 @@
-import * as SQLite from 'expo-sqlite';
-import { AnimatePresence, MotiView } from 'moti';
-import React, { useEffect, useState } from 'react';
+import * as SQLite from "expo-sqlite";
+import { AnimatePresence, MotiView } from "moti";
+import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -8,12 +8,12 @@ import {
   StatusBar,
   StyleSheet,
   Text,
-  View
-} from 'react-native';
-import { ProgressBar } from 'react-native-paper';
-import DatabaseService from '../utils/DatabaseService';
+  View,
+} from "react-native";
+import { ProgressBar } from "react-native-paper";
+import DatabaseService from "../utils/DatabaseService";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
 const BUDDHIST_QUOTES = [
   "Mind precedes all phenomena; mind is their chief; they are mind-made. (Dhammapada 1)",
@@ -56,25 +56,22 @@ const BUDDHIST_QUOTES = [
   "The one who conquers himself is the greatest victor. (Dhammapada 103)",
 
   "Not by silence does one become a sage if one is foolish and ignorant. (Dhammapada 268)",
-  "Better than a thousand meaningless words is one meaningful word that brings peace. (Dhammapada 100)"
+  "Better than a thousand meaningless words is one meaningful word that brings peace. (Dhammapada 100)",
 ];
 
-export const DatabaseInitializer: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const DatabaseInitializer: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [isInitializing, setIsInitializing] = useState<boolean | null>(null);
   const [progress, setProgress] = useState(0);
-  const [phase, setPhase] = useState<'downloading' | 'decompressing'>('downloading');
+  const [phase, setPhase] = useState<"downloading" | "decompressing">(
+    "downloading",
+  );
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const checkStatus = async () => {
-      const dbPath = await getDbPath();
-      if (!dbPath) {
-        setIsInitializing(true);
-        startInitialization();
-        return;
-      }
-
       const exists = await DatabaseService.checkDatabaseExists();
       if (exists) {
         setIsInitializing(false);
@@ -84,15 +81,6 @@ export const DatabaseInitializer: React.FC<{ children: React.ReactNode }> = ({ c
       }
     };
 
-    // Helper to check if we can even resolve a path
-    const getDbPath = async () => {
-      try {
-        const dir = (FileSystem as any).documentDirectory || (FileSystem as any).Paths?.document?.uri;
-        return dir ? `${dir}suttacentral.db` : null;
-      } catch {
-        return null;
-      }
-    };
     checkStatus();
   }, []);
 
@@ -113,13 +101,25 @@ export const DatabaseInitializer: React.FC<{ children: React.ReactNode }> = ({ c
       });
 
       // Verify database
-      const db = SQLite.openDatabaseSync('suttacentral.db');
-      db.execSync('PRAGMA journal_mode = WAL');
+      const db = SQLite.openDatabaseSync("suttacentral.db");
+      db.execSync("PRAGMA journal_mode = WAL");
+
+      // Check if table exists
+      const tableCheck = db.getFirstSync<{ count: number }>(
+        "SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name='menus'",
+      );
+      if (!tableCheck || tableCheck.count === 0) {
+        throw new Error(
+          "Database initialization incomplete: missing menus table",
+        );
+      }
 
       setIsInitializing(false);
     } catch (err) {
-      console.error('Initialization failed:', err);
-      setError(err instanceof Error ? err.message : 'Failed to initialize database');
+      console.error("Initialization failed:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to initialize database",
+      );
     }
   };
 
@@ -129,7 +129,7 @@ export const DatabaseInitializer: React.FC<{ children: React.ReactNode }> = ({ c
 
   if (isInitializing === null) {
     return (
-      <View style={[styles.container, { backgroundColor: '#000' }]}>
+      <View style={[styles.container, { backgroundColor: "#000" }]}>
         <ActivityIndicator color="#fff" />
       </View>
     );
@@ -137,9 +137,13 @@ export const DatabaseInitializer: React.FC<{ children: React.ReactNode }> = ({ c
 
   return (
     <View style={styles.container}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
       <ImageBackground
-        source={require('../assets/images/budhha.jpeg')}
+        source={require("../assets/images/budhha.jpeg")}
         style={styles.background}
         resizeMode="cover"
       >
@@ -147,20 +151,25 @@ export const DatabaseInitializer: React.FC<{ children: React.ReactNode }> = ({ c
           <MotiView
             from={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ type: 'timing', duration: 1000 }}
+            transition={{ type: "timing", duration: 1000 }}
             style={styles.content}
           >
             <MotiView
-              from={{ rotate: '0deg' }}
-              animate={{ rotate: '360deg' }}
-              transition={{ loop: true, type: 'timing', duration: 20000, repeatReverse: false }}
+              from={{ rotate: "0deg" }}
+              animate={{ rotate: "360deg" }}
+              transition={{
+                loop: true,
+                type: "timing",
+                duration: 20000,
+                repeatReverse: false,
+              }}
               style={styles.iconContainer}
             >
               <MotiView
                 style={styles.dhammaWheel}
                 from={{ opacity: 0.5 }}
                 animate={{ opacity: 1 }}
-                transition={{ loop: true, type: 'timing', duration: 2000 }}
+                transition={{ loop: true, type: "timing", duration: 2000 }}
               />
             </MotiView>
 
@@ -173,16 +182,20 @@ export const DatabaseInitializer: React.FC<{ children: React.ReactNode }> = ({ c
                   from={{ opacity: 0, translateY: 10 }}
                   animate={{ opacity: 1, translateY: 0 }}
                   exit={{ opacity: 0, translateY: -10 }}
-                  transition={{ type: 'timing', duration: 800 }}
+                  transition={{ type: "timing", duration: 800 }}
                 >
-                  <Text style={styles.quote}>{`"${BUDDHIST_QUOTES[quoteIndex]}"`}</Text>
+                  <Text
+                    style={styles.quote}
+                  >{`"${BUDDHIST_QUOTES[quoteIndex]}"`}</Text>
                 </MotiView>
               </AnimatePresence>
             </View>
 
             <View style={styles.progressSection}>
               <Text style={styles.phaseText}>
-                {phase === 'downloading' ? 'Downloading Wisdom...' : 'Unfolding the Dhamma...'}
+                {phase === "downloading"
+                  ? "Downloading Wisdom..."
+                  : "Unfolding the Dhamma..."}
               </Text>
               <ProgressBar
                 progress={progress || 0.05}
@@ -195,9 +208,15 @@ export const DatabaseInitializer: React.FC<{ children: React.ReactNode }> = ({ c
             </View>
 
             {error && (
-              <MotiView from={{ opacity: 0 }} animate={{ opacity: 1 }} style={styles.errorBox}>
+              <MotiView
+                from={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                style={styles.errorBox}
+              >
                 <Text style={styles.errorText}>{error}</Text>
-                <Text onPress={startInitialization} style={styles.retryText}>Retry</Text>
+                <Text onPress={startInitialization} style={styles.retryText}>
+                  Retry
+                </Text>
               </MotiView>
             )}
           </MotiView>
@@ -217,13 +236,13 @@ const styles = StyleSheet.create({
   },
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   content: {
-    width: '85%',
-    alignItems: 'center',
+    width: "85%",
+    alignItems: "center",
   },
   iconContainer: {
     marginBottom: 40,
@@ -233,35 +252,35 @@ const styles = StyleSheet.create({
     height: 60,
     borderRadius: 30,
     borderWidth: 3,
-    borderColor: '#FFD700',
-    borderStyle: 'dashed',
+    borderColor: "#FFD700",
+    borderStyle: "dashed",
   },
   title: {
     fontSize: 32,
-    fontWeight: '300',
-    color: '#fff',
+    fontWeight: "300",
+    color: "#fff",
     letterSpacing: 4,
     marginBottom: 60,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
   },
   quoteWrapper: {
     height: 100,
-    justifyContent: 'center',
+    justifyContent: "center",
     marginBottom: 60,
   },
   quote: {
     fontSize: 18,
-    color: '#fff',
-    fontStyle: 'italic',
-    textAlign: 'center',
+    color: "#fff",
+    fontStyle: "italic",
+    textAlign: "center",
     lineHeight: 28,
   },
   progressSection: {
-    width: '100%',
-    alignItems: 'center',
+    width: "100%",
+    alignItems: "center",
   },
   phaseText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 14,
     marginBottom: 12,
     letterSpacing: 1,
@@ -270,25 +289,25 @@ const styles = StyleSheet.create({
   progressBar: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: "rgba(255,255,255,0.2)",
   },
   progressText: {
-    color: '#fff',
+    color: "#fff",
     marginTop: 8,
     fontSize: 12,
   },
   errorBox: {
     marginTop: 30,
-    alignItems: 'center',
+    alignItems: "center",
   },
   errorText: {
-    color: '#ff6b6b',
-    textAlign: 'center',
+    color: "#ff6b6b",
+    textAlign: "center",
     marginBottom: 10,
   },
   retryText: {
-    color: '#FFD700',
-    fontWeight: 'bold',
-    textDecorationLine: 'underline',
-  }
+    color: "#FFD700",
+    fontWeight: "bold",
+    textDecorationLine: "underline",
+  },
 });
