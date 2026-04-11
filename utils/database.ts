@@ -1,6 +1,5 @@
 import * as FileSystem from "expo-file-system/legacy";
 import * as SQLite from "expo-sqlite";
-import { DatabaseDecompressor } from "./DatabaseDecompressor";
 
 const DB_NAME = "suttacentral.db";
 const METADATA_FILENAME = "metadata.json";
@@ -17,19 +16,39 @@ let resolvedPaths: DatasetPaths | null = null;
 function resolvePaths(): DatasetPaths {
   if (resolvedPaths) return resolvedPaths;
 
-  const documentDirectory = (FileSystem as any).documentDirectory as string | null;
-  const cacheDirectory = (FileSystem as any).cacheDirectory as string | null;
-  const baseDirectory = documentDirectory ?? cacheDirectory ?? null;
+  // Try multiple ways to get the document directory (handling SDK 54 changes)
+  const documentDir = (FileSystem as any).documentDirectory ||
+    (FileSystem as any).Paths?.document?.uri ||
+    (FileSystem as any).Paths?.document?.path;
+
+  const cacheDir = (FileSystem as any).cacheDirectory ||
+    (FileSystem as any).Paths?.cache?.uri ||
+    (FileSystem as any).Paths?.cache?.path;
+
+  // Use Document Directory as primary, Cache as secondary fallback
+  const baseDirectory = documentDir || cacheDir;
 
   if (!baseDirectory) {
-    throw new Error("Expo FileSystem documentDirectory is unavailable.");
+    console.error("[dataset] Critical: Both documentDirectory and cacheDirectory are null.");
+    // We provide a fallback string to prevent total crash
+    const fallback = "/";
+    resolvedPaths = {
+      SQLITE_DIR: `${fallback}SQLite`,
+      DATASET_DIR: `${fallback}dataset`,
+      DB_DEST_PATH: `${fallback}SQLite/${DB_NAME}`,
+      METADATA_DEST_PATH: `${fallback}dataset/${METADATA_FILENAME}`,
+    };
+    return resolvedPaths;
   }
 
+  // Ensure path ends with /
+  const normalizedBase = baseDirectory.endsWith('/') ? baseDirectory : `${baseDirectory}/`;
+
   resolvedPaths = {
-    SQLITE_DIR: `${baseDirectory}SQLite`,
-    DATASET_DIR: `${baseDirectory}dataset`,
-    DB_DEST_PATH: `${baseDirectory}SQLite/${DB_NAME}`,
-    METADATA_DEST_PATH: `${baseDirectory}dataset/${METADATA_FILENAME}`,
+    SQLITE_DIR: `${normalizedBase}SQLite`,
+    DATASET_DIR: `${normalizedBase}dataset`,
+    DB_DEST_PATH: `${normalizedBase}SQLite/${DB_NAME}`,
+    METADATA_DEST_PATH: `${normalizedBase}dataset/${METADATA_FILENAME}`,
   };
 
   return resolvedPaths;
@@ -87,19 +106,11 @@ async function copyDatabaseIfNeeded() {
     storedMetadata.dataset_commit !== BUNDLED_METADATA.dataset_commit;
 
   if (shouldReplace) {
-    console.log(
-      "[dataset] Database needs update, using DatabaseDecompressor",
-      "(existing metadata:",
-      storedMetadata?.dataset_commit,
-      ")"
-    );
-    
-    // Use the new DatabaseDecompressor system
-    await DatabaseDecompressor.initializeDatabase();
-    
-    // Write metadata after successful decompression
+    console.log("[dataset] Database needs update. Initialization handled by DatabaseInitializer component.");
+
+    // Write metadata after successful setup
     await writeLocalMetadata(BUNDLED_METADATA);
-    
+
     console.log("[dataset] Database setup complete");
   } else {
     console.log("[dataset] Existing DB up-to-date, skipping setup");

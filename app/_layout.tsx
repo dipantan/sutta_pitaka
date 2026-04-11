@@ -51,7 +51,14 @@ export default function RootLayout() {
                       backgroundColor: paperTheme.colors.background,
                     },
                   }}
-                />
+                >
+                  <Stack.Screen
+                    name="comment"
+                    options={{
+                      presentation: "transparentModal",
+                    }}
+                  />
+                </Stack>
               </SafeAreaView>
             </DatabaseInitializer>
           </GestureHandlerRootView>
