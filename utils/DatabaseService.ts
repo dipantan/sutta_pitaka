@@ -1,4 +1,3 @@
-import { Buffer } from "buffer";
 import { File } from "expo-file-system";
 import * as FileSystem from "expo-file-system/legacy";
 import * as SQLite from "expo-sqlite";
@@ -9,6 +8,7 @@ const DB_URL =
   "https://pub-0c70566437df41cfb795a6a4cb09522b.r2.dev/suttacentral.db.gz";
 const DB_NAME = "suttacentral.db";
 const GZIP_NAME = "suttacentral.db.gz";
+const DECOMPRESS_CHUNK_SIZE = 512 * 1024;
 
 export type ProgressCallback = (
   progress: number,
@@ -16,6 +16,10 @@ export type ProgressCallback = (
 ) => void;
 
 class DatabaseService {
+  private static async yieldToUI(): Promise<void> {
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
+  }
+
   private static getDocumentDirectory(): string {
     let dir =
       (FileSystem as any).documentDirectory ||
@@ -26,14 +30,27 @@ class DatabaseService {
     return dir;
   }
 
-  private static getSqliteDirectory(): string {
-    return `${this.getDocumentDirectory()}SQLite/`;
+  private static getSqliteDirectoryPath(): string {
+    const defaultDir = (SQLite as any).defaultDatabaseDirectory;
+    if (defaultDir && typeof defaultDir === "string" && defaultDir.length > 0) {
+      return defaultDir.replace(/\/*$/, "");
+    }
+
+    let dir = this.getDocumentDirectory();
+    if (dir.startsWith("file://")) {
+      dir = dir.slice(7);
+    }
+    return `${dir.replace(/\/*$/, "")}/SQLite`;
+  }
+
+  private static getSqliteDirectoryUri(): string {
+    return `file://${this.getSqliteDirectoryPath()}/`;
   }
 
   static async checkDatabaseExists(): Promise<boolean> {
     if (Platform.OS === "web") return true;
-    const sqliteDir = this.getSqliteDirectory();
-    const dbPath = `${sqliteDir}${DB_NAME}`;
+    const sqliteDirUri = this.getSqliteDirectoryUri();
+    const dbPath = `${sqliteDirUri}${DB_NAME}`;
 
     console.log(`[DatabaseService] Checking DB at: ${dbPath}`);
 
@@ -113,55 +130,105 @@ class DatabaseService {
     // 2. Decompress
     try {
       onProgress(0, "decompressing");
-      console.log("[DatabaseService] Reading gzip file as base64...");
-      const gzipData = await FileSystem.readAsStringAsync(gzipPath, {
-        encoding: "base64",
-      });
+      console.log("[DatabaseService] Streaming gzip decompression...");
+      const gzipFile = new File(gzipPath);
+      const gzipInfo = await FileSystem.getInfoAsync(gzipPath);
+      const totalCompressedBytes = Math.max(1, gzipInfo.size || 0);
 
-      console.log("[DatabaseService] Converting base64 to buffer...");
-      const buffer = Buffer.from(gzipData, "base64");
+      if (!gzipInfo.exists) {
+        throw new Error("Compressed database file not found after download");
+      }
 
-      console.log("[DatabaseService] Gunzipping...");
-      const decompressed = fflate.gunzipSync(new Uint8Array(buffer));
-      console.log(
-        `[DatabaseService] Decompressed size: ${decompressed.length} bytes`,
-      );
+      const outputFile = new File(dbPath);
+      outputFile.create({ intermediates: true, overwrite: true });
 
-      // Write using Expo File Stream API (Safe for Expo Go)
-      console.log("[DatabaseService] Writing database to disk...");
+      const inputHandle = gzipFile.open();
+      const outputHandle = outputFile.open();
 
-      const dbFile = (File as any) ? new File(dbPath) : null;
-      if (dbFile) {
-        // Clear/Create existing file first
-        await FileSystem.writeAsStringAsync(dbPath, "");
+      let compressedRead = 0;
+      let nextProgressUpdateAt = 0;
 
-        const stream = dbFile.writableStream();
-        const writer = stream.getWriter();
+      try {
+        await new Promise<void>((resolve, reject) => {
+          let settled = false;
+          const safeResolve = () => {
+            if (!settled) {
+              settled = true;
+              resolve();
+            }
+          };
+          const safeReject = (error: unknown) => {
+            if (!settled) {
+              settled = true;
+              reject(error);
+            }
+          };
 
-        const chunkSize = 512 * 1024; // 512KB chunks for stability
-        for (let i = 0; i < decompressed.length; i += chunkSize) {
-          const chunk = decompressed.slice(
-            i,
-            Math.min(i + chunkSize, decompressed.length),
-          );
-          await writer.write(chunk);
+          const gunzip = new fflate.Gunzip((data, final) => {
+            if (settled) return;
 
-          if (i % (5 * 1024 * 1024) === 0) {
-            onProgress(
-              Math.min(0.99, i / decompressed.length),
-              "decompressing",
-            );
-          }
-        }
-        await writer.close();
-      } else {
-        console.log(
-          "[DatabaseService] File API not found, falling back to base64 write (Memory Heavy!)",
-        );
-        const base64 = Buffer.from(decompressed).toString("base64");
-        await FileSystem.writeAsStringAsync(dbPath, base64, {
-          encoding: "base64",
+            try {
+              if (data && data.length > 0) {
+                outputHandle.writeBytes(data);
+              }
+
+              if (final) {
+                safeResolve();
+              }
+            } catch (writeError) {
+              safeReject(writeError);
+            }
+          });
+
+          const feedChunks = async () => {
+            try {
+              while (compressedRead < totalCompressedBytes) {
+                const remaining = totalCompressedBytes - compressedRead;
+                const chunkSize = Math.min(DECOMPRESS_CHUNK_SIZE, remaining);
+                const chunk = inputHandle.readBytes(chunkSize);
+
+                if (!chunk || chunk.length === 0) {
+                  safeReject(
+                    new Error(
+                      "Unexpected end of compressed file during decompression",
+                    ),
+                  );
+                  return;
+                }
+
+                compressedRead += chunk.length;
+                const isFinal = compressedRead >= totalCompressedBytes;
+                try {
+                  gunzip.push(chunk, isFinal);
+                } catch (inflateError) {
+                  safeReject(inflateError);
+                  return;
+                }
+
+                if (compressedRead >= nextProgressUpdateAt || isFinal) {
+                  onProgress(
+                    Math.min(0.99, compressedRead / totalCompressedBytes),
+                    "decompressing",
+                  );
+                  nextProgressUpdateAt = compressedRead + 2 * 1024 * 1024;
+                }
+
+                await DatabaseService.yieldToUI();
+              }
+
+              if (compressedRead >= totalCompressedBytes && !settled) {
+                safeResolve();
+              }
+            } catch (streamErr) {
+              safeReject(streamErr);
+            }
+          };
+
+          void feedChunks();
         });
+      } finally {
+        inputHandle.close();
+        outputHandle.close();
       }
 
       // Cleanup

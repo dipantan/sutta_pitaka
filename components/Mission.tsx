@@ -25,8 +25,8 @@ const Mission = () => {
             },
           ]}
         >
-          "Three things cannot be long hidden: the sun, the moon, and the
-          truth."
+          &quot;Three things cannot be long hidden: the sun, the moon, and the
+          truth.&quot;
         </Text>
         <Text
           style={[
@@ -34,7 +34,7 @@ const Mission = () => {
             {
               alignSelf: "flex-end",
               marginHorizontal: wp(4),
-              color: Color.onTertiarySecondaryTextColor
+              color: Color.onTertiarySecondaryTextColor,
             },
           ]}
         >
@@ -59,7 +59,7 @@ const Mission = () => {
               styles.missionText,
               {
                 textAlign: "left",
-                lineHeight: wp(6)
+                lineHeight: wp(6),
               },
             ]}
           >
@@ -74,9 +74,9 @@ const Mission = () => {
       <Card style={styles.quoteCard}>
         <Card.Content>
           <Text style={styles.quoteText}>
-            "Thousands of candles can be lighted from a single candle, and the
-            life of the candle will not be shortened. Happiness never decreases
-            by being shared."
+            &quot;Thousands of candles can be lighted from a single candle, and
+            the life of the candle will not be shortened. Happiness never
+            decreases by being shared.&quot;
           </Text>
           <Text style={styles.author}>- Buddha</Text>
         </Card.Content>
@@ -106,7 +106,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#000",
     fontStyle: "italic",
-    lineHeight: wp(6)
+    lineHeight: wp(6),
   },
   author: {
     fontSize: 14,

@@ -1,19 +1,22 @@
 import * as FileSystem from "expo-file-system/legacy";
 import * as SQLite from "expo-sqlite";
 import { AnimatePresence, MotiView } from "moti";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Dimensions,
-  ImageBackground,
-  StatusBar,
-  StyleSheet,
-  View,
+    ActivityIndicator,
+    Dimensions,
+    ImageBackground,
+    StatusBar,
+    StyleSheet,
+    View,
 } from "react-native";
 import { ProgressBar, Text } from "react-native-paper";
 import DatabaseService from "../utils/DatabaseService";
 
 const { width, height } = Dimensions.get("window");
+const QUOTE_ROTATION_MS = 5000;
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 const BUDDHIST_QUOTES = [
   "Mind precedes all phenomena; mind is their chief; they are mind-made. (Dhammapada 1)",
@@ -69,43 +72,38 @@ export const DatabaseInitializer: React.FC<{ children: React.ReactNode }> = ({
   );
   const [quoteIndex, setQuoteIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const latestProgress = useRef(0);
+  const latestPhase = useRef<"downloading" | "decompressing">("downloading");
+  const progressFrameRef = useRef<number | null>(null);
+  const initStartedRef = useRef(false);
+  const initInFlightRef = useRef(false);
 
-  useEffect(() => {
-    const checkStatus = async () => {
-      const exists = await DatabaseService.checkDatabaseExists();
-      if (exists) {
-        setIsInitializing(false);
-      } else {
-        setIsInitializing(true);
-        startInitialization();
-      }
-    };
-
-    checkStatus();
-  }, []);
-
-  useEffect(() => {
-    if (isInitializing === true) {
-      const interval = setInterval(() => {
-        setQuoteIndex((prev) => (prev + 1) % BUDDHIST_QUOTES.length);
-      }, 5000);
-      return () => clearInterval(interval);
+  const startInitialization = useCallback(async () => {
+    if (initInFlightRef.current) {
+      console.log("[DatabaseInitializer] Initialization already in progress");
+      return;
     }
-  }, [isInitializing]);
 
-  const startInitialization = async () => {
+    initInFlightRef.current = true;
+
     try {
       console.log("[DatabaseInitializer] Starting initialization sequence...");
       setError(null);
       await DatabaseService.initialize((p, ph) => {
-        setProgress(p);
-        setPhase(ph);
+        latestProgress.current = p;
+        latestPhase.current = ph;
+
+        if (progressFrameRef.current === null) {
+          progressFrameRef.current = requestAnimationFrame(() => {
+            setProgress(latestProgress.current);
+            setPhase(latestPhase.current);
+            progressFrameRef.current = null;
+          });
+        }
       });
 
-      // Verify database
+      // Verify database (async only, Expo-safe)
       console.log("[DatabaseInitializer] Verifying database schema...");
-      const db = SQLite.openDatabaseSync("suttacentral.db");
-      db.execSync("PRAGMA journal_mode = WAL");
 
       // Check size again
       console.log("[DatabaseInitializer] Final check of DB file...");
@@ -117,24 +115,43 @@ export const DatabaseInitializer: React.FC<{ children: React.ReactNode }> = ({
         `[DatabaseInitializer] DB File Info: ${JSON.stringify(info)}`,
       );
 
-      // Check all tables
-      const tables = db.getAllSync<{ name: string }>(
-        "SELECT name FROM sqlite_master WHERE type='table'",
-      );
-      console.log(
-        "[DatabaseInitializer] Tables found: " +
-          tables.map((t) => t.name).join(", "),
-      );
+      if (!info.exists || !info.size || info.size < 100 * 1024) {
+        throw new Error("Database file missing or invalid after decompression");
+      }
 
-      // Check if table exists
-      const tableCheck = db.getFirstSync<{ count: number }>(
-        "SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name='menus'",
-      );
-      if (!tableCheck || tableCheck.count === 0) {
-        console.error(
-          "[DatabaseInitializer] Verification failed: table menus not found",
-        );
-        throw new Error("Database template invalid: missing required tables");
+      let verified = false;
+      let lastVerifyError: unknown = null;
+
+      for (let attempt = 1; attempt <= 3; attempt += 1) {
+        try {
+          const db = await SQLite.openDatabaseAsync("suttacentral.db");
+
+          const tableCheck = await db.getFirstAsync<{ count: number }>(
+            "SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name='menus'",
+          );
+
+          if (!tableCheck || tableCheck.count === 0) {
+            throw new Error(
+              "Database template invalid: missing required tables",
+            );
+          }
+
+          verified = true;
+          break;
+        } catch (verifyErr) {
+          lastVerifyError = verifyErr;
+          console.warn(
+            `[DatabaseInitializer] DB verification attempt ${attempt} failed`,
+            verifyErr,
+          );
+          if (attempt < 3) {
+            await sleep(250);
+          }
+        }
+      }
+
+      if (!verified) {
+        throw lastVerifyError ?? new Error("Failed to verify database");
       }
 
       console.log("[DatabaseInitializer] Verification successful");
@@ -144,8 +161,63 @@ export const DatabaseInitializer: React.FC<{ children: React.ReactNode }> = ({
       setError(
         err instanceof Error ? err.message : "Failed to initialize database",
       );
+    } finally {
+      initInFlightRef.current = false;
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    const checkStatus = async () => {
+      if (initStartedRef.current) {
+        return;
+      }
+      initStartedRef.current = true;
+
+      const exists = await DatabaseService.checkDatabaseExists();
+      if (exists) {
+        setIsInitializing(false);
+      } else {
+        setIsInitializing(true);
+        void startInitialization();
+      }
+    };
+
+    void checkStatus();
+  }, [startInitialization]);
+
+  useEffect(() => {
+    if (isInitializing === true) {
+      let cancelled = false;
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+      let nextTickAt = Date.now() + QUOTE_ROTATION_MS;
+
+      const tick = () => {
+        if (cancelled) return;
+        setQuoteIndex((prev) => (prev + 1) % BUDDHIST_QUOTES.length);
+
+        nextTickAt += QUOTE_ROTATION_MS;
+        const delay = Math.max(250, nextTickAt - Date.now());
+        timeoutId = setTimeout(tick, delay);
+      };
+
+      timeoutId = setTimeout(tick, QUOTE_ROTATION_MS);
+
+      return () => {
+        cancelled = true;
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      };
+    }
+  }, [isInitializing]);
+
+  useEffect(() => {
+    return () => {
+      if (progressFrameRef.current !== null) {
+        cancelAnimationFrame(progressFrameRef.current);
+      }
+    };
+  }, []);
 
   const handleForceReset = async () => {
     try {
