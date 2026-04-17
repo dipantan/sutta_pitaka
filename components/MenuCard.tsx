@@ -33,14 +33,24 @@ const MenuCard = ({
         .trim()
     : "";
   const descriptionColor = dark ? colors.onSurface : "#201b13";
-  const cardBorderColor = dark ? colors.outlineVariant : "rgba(125, 95, 45, 0.08)";
+  const cardBorderColor = dark
+    ? colors.outlineVariant
+    : "rgba(125, 95, 45, 0.08)";
 
   return (
     <Card
-      style={[styles.card, { backgroundColor: colors.surface, borderColor: cardBorderColor }]}
+      style={[
+        styles.card,
+        { backgroundColor: colors.surface, borderColor: cardBorderColor },
+      ]}
       onPress={onPress}
     >
-      <Card.Content style={[styles.content, yellowBrickRoad ? styles.contentWithTopBadge : null]}>
+      <Card.Content
+        style={[
+          styles.content,
+          yellowBrickRoad ? styles.contentWithTopBadge : null,
+        ]}
+      >
         {headerTitle && (
           <Text
             variant="titleLarge"
@@ -57,9 +67,7 @@ const MenuCard = ({
         )}
 
         <View style={styles.metaRow}>
-          <View
-            style={styles.metaLeft}
-          >
+          <View style={styles.metaLeft}>
             {leftText && (
               <View
                 style={[
@@ -69,7 +77,7 @@ const MenuCard = ({
                   },
                 ]}
               >
-                <RNText
+                <Text
                   numberOfLines={1}
                   style={{
                     color: Color.onPrimarySecondaryTextColor,
@@ -82,7 +90,7 @@ const MenuCard = ({
                   }}
                 >
                   {leftText?.toUpperCase()}
-                </RNText>
+                </Text>
               </View>
             )}
 
@@ -100,10 +108,7 @@ const MenuCard = ({
 
             {child_range && (
               <Text
-                style={[
-                  styles.childRange,
-                  { color: colors.onSurfaceVariant },
-                ]}
+                style={[styles.childRange, { color: colors.onSurfaceVariant }]}
                 variant="titleSmall"
               >
                 {child_range}
@@ -112,8 +117,15 @@ const MenuCard = ({
           </View>
 
           {rightText && (
-            <View style={[styles.metaBadge, { backgroundColor: colors.primaryContainer }]}> 
-              <Text style={[styles.rightText, { color: colors.onPrimaryContainer }]}>
+            <View
+              style={[
+                styles.metaBadge,
+                { backgroundColor: colors.primaryContainer },
+              ]}
+            >
+              <Text
+                style={[styles.rightText, { color: colors.onPrimaryContainer }]}
+              >
                 {rightText}
               </Text>
             </View>
@@ -127,7 +139,10 @@ const MenuCard = ({
           >
             <View style={styles.descriptionHeaderRow}>
               <Text
-                style={[styles.descriptionHint, { color: colors.onSurfaceVariant }]}
+                style={[
+                  styles.descriptionHint,
+                  { color: colors.onSurfaceVariant },
+                ]}
                 variant="labelSmall"
               >
                 {isExpanded ? "Show less" : "Show more"}
@@ -157,7 +172,7 @@ const MenuCard = ({
             <List.Accordion
               title={`Translations in your chosen language (${
                 translations.filter(
-                  (item) => item.lang === currentLanguage?.iso_code
+                  (item) => item.lang === currentLanguage?.iso_code,
                 ).length
               })`}
               titleStyle={{ color: colors.onError, fontSize: 14 }}
@@ -165,7 +180,7 @@ const MenuCard = ({
             >
               <FlatList
                 data={translations.filter(
-                  (item) => item.lang === currentLanguage?.iso_code
+                  (item) => item.lang === currentLanguage?.iso_code,
                 )}
                 style={{
                   gap: 16,
@@ -237,14 +252,14 @@ const MenuCard = ({
             <List.Accordion
               title={`Translations in other languages (${
                 translations.filter(
-                  (item) => item.lang !== currentLanguage?.iso_code
+                  (item) => item.lang !== currentLanguage?.iso_code,
                 ).length
               })`}
               titleStyle={{ color: colors.onError, fontSize: 14 }}
             >
               <FlatList
                 data={translations.filter(
-                  (item) => item.lang !== currentLanguage?.iso_code
+                  (item) => item.lang !== currentLanguage?.iso_code,
                 )}
                 style={{
                   gap: 16,
@@ -322,7 +337,10 @@ const MenuCard = ({
               { backgroundColor: colors.primaryContainer },
             ]}
           >
-            <Text variant="labelSmall" style={{ color: colors.onPrimaryContainer, fontWeight: "700" }}>
+            <Text
+              variant="labelSmall"
+              style={{ color: colors.onPrimaryContainer, fontWeight: "700" }}
+            >
               {yellowBrickRoadCount}{" "}
               {currentLanguage?.name || currentLanguage?.iso_code}
             </Text>
@@ -338,7 +356,6 @@ export default MenuCard;
 const styles = StyleSheet.create({
   card: {
     borderRadius: 22,
-    overflow: "hidden",
     borderWidth: 1,
     elevation: 2,
   },

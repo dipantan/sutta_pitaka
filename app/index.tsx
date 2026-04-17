@@ -11,7 +11,11 @@ import { Card, Text, useTheme } from "react-native-paper";
 
 const App = () => {
   const { colors } = useTheme();
-  const { data: pitakas, isLoading, error } = useQuery({
+  const {
+    data: pitakas,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ["pitakas", "v2"],
     queryFn: loadPitakas,
     staleTime: 0,
@@ -109,8 +113,6 @@ const App = () => {
           Explore Suttas
         </Button> */}
 
-
-
         <View style={styles.sectionContainer}>
           {isLoading ? (
             <View style={styles.loadingContainer}>
@@ -124,35 +126,64 @@ const App = () => {
               </Text>
             </View>
           ) : (
-            (pitakas || []).filter((p) => ['sutta', 'vinaya', 'abhidhamma'].includes(p.pitaka)).map((item) => (
-              <Card
-                key={item.uid}
-                style={[styles.pitakaCard, { backgroundColor: colors.elevation.level2 }]}
-                contentStyle={styles.pitakaCardContent}
-                onPress={() => {
-                  const targetUid = item.uid || item.pitaka;
-                  router.push({ pathname: "/menu/[uid]", params: { uid: targetUid } });
-                }}
-              >
-                <Text variant="titleMedium" style={{ fontWeight: "700", color: colors.onSurface }}>
-                  {item.translated_name || item.root_name}
-                </Text>
-                <Text variant="labelSmall" style={{ textTransform: "uppercase", letterSpacing: 1, color: colors.onSurfaceVariant }}>
-                  {item.pitaka === 'sutta' ? 'SUTTAPIṬAKA' : item.pitaka === 'vinaya' ? 'VINAYAPIṬAKA' : item.pitaka === 'abhidhamma' ? 'ABHIDHAMMAPIṬAKA' : ''}
-                </Text>
-                <Text
-                  variant="bodyMedium"
-                  style={{ textAlign: "center", color: colors.onSurface }}
+            (pitakas || [])
+              .filter((p) =>
+                ["sutta", "vinaya", "abhidhamma"].includes(p.pitaka),
+              )
+              .map((item) => (
+                <Card
+                  key={item.uid}
+                  style={[
+                    styles.pitakaCard,
+                    { backgroundColor: colors.elevation.level2 },
+                  ]}
+                  contentStyle={styles.pitakaCardContent}
+                  onPress={() => {
+                    const targetUid = item.uid || item.pitaka;
+                    router.push({
+                      pathname: "/menu/[uid]",
+                      params: { uid: targetUid },
+                    });
+                  }}
                 >
-                  {item.blurb || "Tap to explore this collection offline."}
-                </Text>
-                {item.yellow_brick_road_count ? (
-                  <Text variant="labelSmall" style={{ color: colors.onSurfaceVariant }}>
-                    {item.yellow_brick_road_count} curated discourses
+                  <Text
+                    variant="titleMedium"
+                    style={{ fontWeight: "700", color: colors.onSurface }}
+                  >
+                    {item.translated_name || item.root_name}
                   </Text>
-                ) : null}
-              </Card>
-            ))
+                  <Text
+                    variant="labelSmall"
+                    style={{
+                      textTransform: "uppercase",
+                      letterSpacing: 1,
+                      color: colors.onSurfaceVariant,
+                    }}
+                  >
+                    {item.pitaka === "sutta"
+                      ? "SUTTAPIṬAKA"
+                      : item.pitaka === "vinaya"
+                        ? "VINAYAPIṬAKA"
+                        : item.pitaka === "abhidhamma"
+                          ? "ABHIDHAMMAPIṬAKA"
+                          : ""}
+                  </Text>
+                  <Text
+                    variant="bodyMedium"
+                    style={{ textAlign: "center", color: colors.onSurface }}
+                  >
+                    {item.blurb || "Tap to explore this collection offline."}
+                  </Text>
+                  {item.yellow_brick_road_count ? (
+                    <Text
+                      variant="labelSmall"
+                      style={{ color: colors.onSurfaceVariant }}
+                    >
+                      {item.yellow_brick_road_count} curated discourses
+                    </Text>
+                  ) : null}
+                </Card>
+              ))
           )}
         </View>
 

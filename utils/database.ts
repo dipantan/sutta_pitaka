@@ -1,5 +1,6 @@
 import * as FileSystem from "expo-file-system/legacy";
 import * as SQLite from "expo-sqlite";
+import DatabaseService from "./DatabaseService";
 
 const DB_NAME = "suttacentral.db";
 const METADATA_FILENAME = "metadata.json";
@@ -17,11 +18,13 @@ function resolvePaths(): DatasetPaths {
   if (resolvedPaths) return resolvedPaths;
 
   // Try multiple ways to get the document directory (handling SDK 54 changes)
-  const documentDir = (FileSystem as any).documentDirectory ||
+  const documentDir =
+    (FileSystem as any).documentDirectory ||
     (FileSystem as any).Paths?.document?.uri ||
     (FileSystem as any).Paths?.document?.path;
 
-  const cacheDir = (FileSystem as any).cacheDirectory ||
+  const cacheDir =
+    (FileSystem as any).cacheDirectory ||
     (FileSystem as any).Paths?.cache?.uri ||
     (FileSystem as any).Paths?.cache?.path;
 
@@ -29,7 +32,9 @@ function resolvePaths(): DatasetPaths {
   const baseDirectory = documentDir || cacheDir;
 
   if (!baseDirectory) {
-    console.error("[dataset] Critical: Both documentDirectory and cacheDirectory are null.");
+    console.error(
+      "[dataset] Critical: Both documentDirectory and cacheDirectory are null.",
+    );
     // We provide a fallback string to prevent total crash
     const fallback = "/";
     resolvedPaths = {
@@ -42,7 +47,9 @@ function resolvePaths(): DatasetPaths {
   }
 
   // Ensure path ends with /
-  const normalizedBase = baseDirectory.endsWith('/') ? baseDirectory : `${baseDirectory}/`;
+  const normalizedBase = baseDirectory.endsWith("/")
+    ? baseDirectory
+    : `${baseDirectory}/`;
 
   resolvedPaths = {
     SQLITE_DIR: `${normalizedBase}SQLite`,
@@ -90,7 +97,7 @@ async function writeLocalMetadata(metadata: DatasetMetadata) {
   await ensureDirExists(DATASET_DIR);
   await FileSystem.writeAsStringAsync(
     METADATA_DEST_PATH,
-    JSON.stringify(metadata)
+    JSON.stringify(metadata),
   );
 }
 
@@ -106,7 +113,9 @@ async function copyDatabaseIfNeeded() {
     storedMetadata.dataset_commit !== BUNDLED_METADATA.dataset_commit;
 
   if (shouldReplace) {
-    console.log("[dataset] Database needs update. Initialization handled by DatabaseInitializer component.");
+    console.log(
+      "[dataset] Database needs update. Initialization handled by DatabaseInitializer component.",
+    );
 
     // Write metadata after successful setup
     await writeLocalMetadata(BUNDLED_METADATA);
@@ -141,10 +150,30 @@ export async function ensureDatasetReady() {
 
 export async function getDatabase() {
   if (!dbInstance) {
-    await ensureDatasetReady();
-    // Database is now managed by DatabaseDecompressor, use the standard path
+    const exists = await DatabaseService.checkDatabaseExists();
+    if (!exists) {
+      console.warn(
+        "[database] Database missing or invalid in getDatabase. This should be handled by DatabaseInitializer.",
+      );
+      // We don't throw here to avoid crashing the whole app,
+      // but the next query will likely fail if initialization hasn't happened.
+    }
     dbInstance = SQLite.openDatabaseSync(DB_NAME);
   }
+
+  // Extra safety: if for some reason we have a connection to an empty DB
+  try {
+    const result = dbInstance.getFirstSync<{ count: number }>(
+      "SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name='menus'",
+    );
+    if (!result || result.count === 0) {
+      console.error("[database] menus table missing in active connection!");
+      // We could try to force a re-open or just let the caller handle the error
+    }
+  } catch (e) {
+    console.error("[database] Health check failed in getDatabase", e);
+  }
+
   return dbInstance;
 }
 

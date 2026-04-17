@@ -1,3 +1,4 @@
+import * as FileSystem from "expo-file-system/legacy";
 import * as SQLite from "expo-sqlite";
 import { AnimatePresence, MotiView } from "moti";
 import React, { useEffect, useState } from "react";
@@ -7,10 +8,9 @@ import {
   ImageBackground,
   StatusBar,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
-import { ProgressBar } from "react-native-paper";
+import { ProgressBar, Text } from "react-native-paper";
 import DatabaseService from "../utils/DatabaseService";
 
 const { width, height } = Dimensions.get("window");
@@ -95,30 +95,67 @@ export const DatabaseInitializer: React.FC<{ children: React.ReactNode }> = ({
 
   const startInitialization = async () => {
     try {
+      console.log("[DatabaseInitializer] Starting initialization sequence...");
+      setError(null);
       await DatabaseService.initialize((p, ph) => {
         setProgress(p);
         setPhase(ph);
       });
 
       // Verify database
+      console.log("[DatabaseInitializer] Verifying database schema...");
       const db = SQLite.openDatabaseSync("suttacentral.db");
       db.execSync("PRAGMA journal_mode = WAL");
+
+      // Check size again
+      console.log("[DatabaseInitializer] Final check of DB file...");
+      const sqliteDir = (FileSystem as any).documentDirectory + "SQLite/";
+      const fullPath = sqliteDir + "suttacentral.db";
+      const info = await FileSystem.getInfoAsync(fullPath);
+      console.log(`[DatabaseInitializer] DB File Path: ${fullPath}`);
+      console.log(
+        `[DatabaseInitializer] DB File Info: ${JSON.stringify(info)}`,
+      );
+
+      // Check all tables
+      const tables = db.getAllSync<{ name: string }>(
+        "SELECT name FROM sqlite_master WHERE type='table'",
+      );
+      console.log(
+        "[DatabaseInitializer] Tables found: " +
+          tables.map((t) => t.name).join(", "),
+      );
 
       // Check if table exists
       const tableCheck = db.getFirstSync<{ count: number }>(
         "SELECT count(*) as count FROM sqlite_master WHERE type='table' AND name='menus'",
       );
       if (!tableCheck || tableCheck.count === 0) {
-        throw new Error(
-          "Database initialization incomplete: missing menus table",
+        console.error(
+          "[DatabaseInitializer] Verification failed: table menus not found",
         );
+        throw new Error("Database template invalid: missing required tables");
       }
 
+      console.log("[DatabaseInitializer] Verification successful");
       setIsInitializing(false);
     } catch (err) {
-      console.error("Initialization failed:", err);
+      console.error("[DatabaseInitializer] Initialization failed:", err);
       setError(
         err instanceof Error ? err.message : "Failed to initialize database",
+      );
+    }
+  };
+
+  const handleForceReset = async () => {
+    try {
+      console.log("[DatabaseInitializer] Force resetting database...");
+      await DatabaseService.deleteDatabase();
+      startInitialization();
+    } catch (err) {
+      setError(
+        "Failed to delete database: " +
+          (err instanceof Error ? err.message : "Unknown error"),
       );
     }
   };
@@ -214,9 +251,17 @@ export const DatabaseInitializer: React.FC<{ children: React.ReactNode }> = ({
                 style={styles.errorBox}
               >
                 <Text style={styles.errorText}>{error}</Text>
-                <Text onPress={startInitialization} style={styles.retryText}>
-                  Retry
-                </Text>
+                <View style={{ flexDirection: "row", gap: 30 }}>
+                  <Text onPress={startInitialization} style={styles.retryText}>
+                    Retry
+                  </Text>
+                  <Text
+                    onPress={handleForceReset}
+                    style={[styles.retryText, { color: "#ff6b6b" }]}
+                  >
+                    Reset All
+                  </Text>
+                </View>
               </MotiView>
             )}
           </MotiView>
